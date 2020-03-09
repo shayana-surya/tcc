@@ -11,8 +11,75 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(readxl)
-dados <- read_excel("DadosAlimentadoresCEMIG_XY.xlsx")
-View(dados)
+library(data.table)
+
+dados2018 <- read_excel("DadosAlimentadoresCEMIG_XY.xlsx", sheet = 2)
+dados2013 <- read_excel("DadosAlimentadoresCEMIG_XY.xlsx", sheet = 1)
+
+joinDados <- merge(x = dados2013, y = dados2018, by="alimentador", all=TRUE)
+
+diffCemigData <- data.table(alimentador = character(),
+                                          x = numeric(),
+                                          y = numeric(),
+                                          difConsumo = numeric()
+                            )
+
+excluidas <- data.table(alimentador = character(),
+                                          dados2013.x = numeric(),
+                                          dados2013.y = numeric(),
+                                          dados2018.x = numeric(),
+                                          dados2018.y = numeric(),
+                                          dados2013.consumo = numeric(),
+                                          dados2018.consumo = numeric()
+                            )
+
+count <- 0
+
+for (i in 1:nrow(joinDados))
+{
+  if(
+      (!is.na(joinDados$ConsumoMedido.x[i]) || !is.na(joinDados$ConsumoMedido.y[i])) &&
+      (!is.na(joinDados$x.x[i]) || !is.na(joinDados$x.y[i])) && 
+      (!is.na(joinDados$y.x[i]) || !is.na(joinDados$y.y[i]))
+     )
+  {
+    joinDados$ConsumoMedido.x[i] <- replace(x = joinDados$ConsumoMedido.x[i], list = is.na(joinDados$ConsumoMedido.x[i]), values = 0)
+    joinDados$ConsumoMedido.y[i] <- replace(x = joinDados$ConsumoMedido.y[i], list = is.na(joinDados$ConsumoMedido.y[i]), values = 0)
+    
+    if(!is.na(joinDados$x.x[i]) && !is.na(joinDados$y.x[i]))
+    {
+      validX = joinDados$x.x[i]
+      validY = joinDados$y.x[i]
+      
+    }
+    else
+    {
+      validX = joinDados$x.y[i]
+      validY = joinDados$y.y[i]
+      
+    }
+    
+    diffCemigData <- rbind(diffCemigData, data.frame(
+            alimentador = joinDados$alimentador[i],
+            x = validX,
+            y = validY,
+            difConsumo = joinDados$ConsumoMedido.y[i] - joinDados$ConsumoMedido.x[i]
+      
+    ))
+  }
+  else
+  {
+    excluidas <- rbind(excluidas, data.frame(
+                    alimentador = joinDados$alimentador[i],
+                    dados2013.x = joinDados$x.x[i],
+                    dados2013.y = joinDados$y.x[i],
+                    dados2018.x = joinDados$x.y[i],
+                    dados2018.y = joinDados$y.y[i],
+                    dados2013.consumo = joinDados$ConsumoMedido.x[i],
+                    dados2018.consumo = joinDados$ConsumoMedido.y[i]
+    ),fill=TRUE)
+  }
+}
 
 ```
 
