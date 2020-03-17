@@ -1,0 +1,128 @@
+---
+title: "Fase1"
+author: "Rafael"
+date: "07/03/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Colocar aqui todas as bibliotecas que forem necessarias ativar para executar uma funcao.
+
+```{r Biblioteca}
+library(readxl)
+library(REAT)
+
+```
+
+Testando um algoritmo de cluster para a base de dados 2013.
+Aqui ainda precisamos:
+  * Fazer a leitura da base de dados 2018
+
+```{r Leitura dos Dados}
+dados2013 <- read_excel(path = "DadosAlimentadoresCEMIG_XY.xlsx",sheet = 1)
+
+```
+
+Abaixo, estou limpando todas as linhas que contenham pelo menos um valor do tipo "NA"
+Isso não é o correto, precisamos verificar como será feito o tratamento da base.
+  * Podemos eliminar aquelas linhas em que não há informação de consumo medido
+  * Podemos fazer uma EDA para encontrar outliers e discutir se retiramos ou não
+
+```{r Tratamento Base de Dados}
+dados2013 <- na.omit(dados2013)
+
+```
+
+Pontos a serem alterados nessa etapa:
+  * Cruzar as duas bases de dados no sentido de preencher informações ausentes, como coordenadas
+  * Preparar uma base de dados única, juntando todos os alimentares com pelo menos um registro de consumo
+  * Criar uma coluna nessa base de dados, que retrate a diferença de ConsumoMedido entre os anos
+
+Em seguida, estou calculando a matriz de distancia euclidiana entre os alimentadores. Salvando o resultado em um dataframe.
+O que podemos avaliar aqui:
+  * Como remover essas informações em vermelho que aparecem
+
+```{r Calculo Distancia Euclidiana}
+matriz2013 <- dist.mat(dados2013,"alimentador","y","x",dados2013,"alimentador","y","x")
+
+```
+
+Ordenando o dataframe em função da coluna "From" e da coluna "Distancia"
+Isso facilita muito na hora de encontrar os alimentadores mais proximos, independentemente de utilizarmos a logica dos K mais proximos ou a logica do raio de distancia.
+
+```{r Ordenando o DF}
+matriz2013 <- matriz2013[order(matriz2013$from,matriz2013$distance),]
+```
+
+Estava gerando um arquivo de saida para fazer o algoritmo de cluster no C.
+Problema: excel possui um limite de linhas, cerca de 1kk. Nosso DF com as distancias é maior que 3kk.
+Quando formos programar em C, podemos:
+  * Quebrar o DF e gerar diferentes arquivos de saida
+  * Descobrir como programar em C aqui no RStudio, de forma a aproveitar a base de dados já lida
+  * Pensar na possibilidade de realizar o calculo das distancias em C tbm, o que eliminaria o R
+    * Nesse cenario, precisamos pensar como conversar com o Shiny
+
+```{r Gerando Arquivo Saida}
+#write.table(matriz2013,"matriz_distancias2013.csv",quote = FALSE)
+
+```
+
+Aqui, uma relacao de estruturas, variaveis que serao necessarias durante a varredura
+  centroides: lista que guarda os nomes dos alimentadores. Isso ajuda no acesso aos dados.
+  clusters: cada linha guarda um cluster, a primeria coluna e o cluster de origem e a ultima e o valor da estatistica de teste calculada
+  df_aux: armazena um "recorte" de matriz2013, apenas as linhas de um alimentador origem selecionado (o centroide utilizado por iteracao)
+  resultados: dataframe para salvar temporariamente os k vizinhos mais proximos
+  somatorio: variavel para calcular o valor da estatistica de teste a cada iteracao
+  k: numero de vizinhos proximos a serem inseridos no cluster
+  
+
+```{r Auxiliares}
+centroides <- dados2013$alimentador
+clusters <- data.frame()
+df_aux <- data.frame()
+resultados <- data.frame()
+somatorio <- 0
+k <- 10
+
+```
+
+```{r testes}
+resultados[1,1] <- centroides[1]
+resultados[1,2] <- centroides[2]
+as.character(matriz2013[1, 2])
+resultados[3] <- as.character(matriz2013[3, 2])
+colnames(clusters) <- c("Origem")
+clusters <- resultados
+clusters <- rbind(clusters,resultados)
+
+
+```
+
+
+```{r Gerando Clusters}
+
+i <- 1
+
+while (i <= length(centroides)) {
+  resultados <- data.frame()
+  somatorio <- 0
+  df_aux <- matriz2013[matriz2013$from == centroides[i], ]
+  for (j in 1:k) {
+    resultados[i,j] <- as.character(df_aux[j, 2])
+    somatorio <- somatorio + as.numeric(dados2013[dados2013$alimentador == resultados[i,j],6])
+  }
+  resultados[i,j+1] <- somatorio
+  clusters <- rbind(clusters,resultados)
+  i <- i+1
+}
+
+
+```
+
+```{r}
+clusters <- na.omit(clusters)
+```
+
