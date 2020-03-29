@@ -1,5 +1,5 @@
 library(shiny)
-source('~/tcc/main.r')
+source('D:/Documentos/tcc/main.r')
 
 ui <- fluidPage(
   tags$head(
@@ -71,9 +71,9 @@ server <- function(input,output,session) {
     else if(input$var == 4){
       excluidas}
     else if(input$var == 5){
-      matrizDistancia[100,]}
+      dados2013}
     else{
-      clusters[100,]}ddd
+      dados2013}
   })
   
   output$plot <- renderPlot({
