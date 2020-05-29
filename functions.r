@@ -68,13 +68,13 @@ createData <- function(joinDados){
 
 createEuclideanDistance <- function(diffCemigData) {
   
-  matrizDistancia <- dist.mat(diffCemigData,"alimentador","y","x",diffCemigData,"alimentador","y","x")
+  matrizDistancia <- dist.mat(diffCemigData,"alimentador","y","x",diffCemigData,"alimentador","y","x", unit = "km")
   matrizDistancia <- matrizDistancia[order(matrizDistancia$from,matrizDistancia$distance),]
   
   return (matrizDistancia)
 }
 
-calculatorElementsTestEstatistic <- function(centroides,diffCemigData) {
+EstatisticTestElementsCalculator <- function(centroides,diffCemigData) {
   TestEstatistic <- data.frame(N = length(centroides), #Equivale ao total geral de observacoes
                                mi = mean(diffCemigData$difConsumo), #Media geral da diferenca de consumo
                                sigma2 =  var(diffCemigData$difConsumo),  #Variancia geral da diferenca de consumo

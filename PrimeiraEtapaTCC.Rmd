@@ -32,7 +32,11 @@ Isso não é o correto, precisamos verificar como será feito o tratamento da ba
   * Podemos fazer uma EDA para encontrar outliers e discutir se retiramos ou não
 
 ```{r Tratamento Base de Dados}
-dados2013 <- na.omit(dados2013)
+
+dados2013 <- dados2013[!is.na(dados2013$ConsumoMedido),]
+
+
+
 
 ```
 

@@ -1,5 +1,6 @@
 library(shiny)
 source('D:/Documentos/tcc/main.r')
+source('D:/Documentos/tcc/shinydata.r')
 
 ui <- fluidPage(
   tags$head(
@@ -56,7 +57,18 @@ ui <- fluidPage(
                           plotOutput("plot")
                         )
                       )
-                  )
+                  ),
+             tabPanel("Mapa",
+                      sidebarLayout(
+                        sidebarPanel(
+                          "Teste"
+                        ),
+                        mainPanel(
+                          leafletOutput("mapa",height = "90vh")
+                        )
+                      )
+             
+             )
             )
       )
 
@@ -79,6 +91,8 @@ server <- function(input,output,session) {
   output$plot <- renderPlot({
     hist(mtcars$mpg,col="blue",breaks=input$b)
   })
+  
+  output$mapa <- renderLeaflet(mapa)
   
 }
 
