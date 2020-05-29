@@ -51,7 +51,7 @@ ui <- fluidPage(
              tabPanel("EDA",
                       sidebarLayout(
                         sidebarPanel(
-                          sliderInput("b","Selecione o numero de dados", min=5,max=20,value=10)
+                          selectInput("var","1. Selecione o histograma que deseja vizualizar", choice = c("Simulação de Monte Carlo" = 1, "Dados Originais" =2),selected = 2)
                         ),
                         mainPanel(
                           plotOutput("plot")
@@ -87,9 +87,15 @@ server <- function(input,output,session) {
     else{
       dados2013}
   })
-  
-  output$plot <- renderPlot({
-    hist(mtcars$mpg,col="blue",breaks=input$b)
+  output$data2 <- renderTable({
+    if(input$var== 1)
+      output$plot <- renderPlot({
+      histMatrixSimul
+      })
+    else
+      output$plot <- renderPlot({
+      histMatrixDist
+    })
   })
   
   output$mapa <- renderLeaflet(mapa)

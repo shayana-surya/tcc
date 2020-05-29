@@ -9,14 +9,32 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+Colocar aqui todas as bibliotecas que forem necessarias ativar para executar uma funcao.
+
+```{r Biblioteca}
 library(readxl)
-library(data.table)
 library(REAT)
+library(data.table)
+```
 
-dados2018 <- read_excel("DadosAlimentadoresCEMIG_XY.xlsx", sheet = 2)
-dados2013 <- read_excel("DadosAlimentadoresCEMIG_XY.xlsx", sheet = 1)
+Leitura das Bases de dados: 2013 e 2018
 
+```{r Leitura dos Dados}
+dados2013 <- read_excel(path = "DadosAlimentadoresCEMIG_XY.xlsx",sheet = 1)
+dados2018 <- read_excel(path = "DadosAlimentadoresCEMIG_XY.xlsx",sheet = 2)
+
+```
+
+Pontos desenvolvidos nessa etapa:
+  * Cruzamento das duas bases de dados no sentido de preencher informações ausentes, como coordenadas
+  * Preparacao de uma base de dados única, juntando todos os alimentares com pelo menos um registro de consumo
+  * Criacao de uma coluna nessa base de dados, que retrate a diferença de ConsumoMedido entre os anos
+  * Criacao de uma base de dados com as linhas removidas durante a limpeza
+
+Explicar aqui como foi feita a remocao de linhas!!!!!!!!!
+* Podemos fazer uma EDA para encontrar outliers e discutir se retiramos ou não
+
+```{r Estruturacao da Base de Dados}
 joinDados <- merge(x = dados2013, y = dados2018, by="alimentador", all=TRUE)
 
 diffCemigData <- data.table(alimentador = character(),
@@ -82,68 +100,165 @@ for (i in 1:nrow(joinDados))
   }
 }
 
+```
 
+Em seguida, estou calculando a matriz de distancia euclidiana entre os alimentadores. Salvando o resultado em um dataframe.
+O que podemos avaliar aqui:
+  * Como remover essas informações em vermelho que aparecem
+  *239.25 tempo decorrido -> acho que representa segundos
+
+
+```{r Calculo Distancia Euclidiana}
+ti <- proc.time()
 matrizDistancia <- dist.mat(diffCemigData,"alimentador","y","x",diffCemigData,"alimentador","y","x")
-matrizDistancia <- matrizDistancia[order(matrizDistancia$from,matrizDistancia$distance),]
+proc.time() - ti
 
+```
+
+Ordenando o dataframe em função da coluna "From" e da coluna "Distancia"
+Isso facilita muito na hora de encontrar os alimentadores mais proximos, independentemente de utilizarmos a logica dos K mais proximos ou a logica do raio de distancia.
+
+```{r Ordenando o DF}
+matrizDistancia <- matrizDistancia[order( matrizDistancia$from,matrizDistancia$distance),]
+```
+  Aqui, uma relacao de estruturas, variaveis que serao necessarias durante a varredura
+  centroides: lista que guarda os nomes dos alimentadores. Isso ajuda no acesso aos dados.
+  clusters: cada linha guarda um cluster, a primeria coluna e o cluster de origem e a ultima e o valor da estatistica de teste calculada
+  df_aux: armazena um "recorte" de matriz2013, apenas as linhas de um alimentador origem selecionado (o centroide utilizado por iteracao)
+  resultados: dataframe para salvar temporariamente os k vizinhos mais proximos
+  somatorio: variavel para calcular o valor da estatistica de teste a cada iteracao
+  k: numero de vizinhos proximos a serem inseridos no cluster
+  
+
+```{r Auxiliares}
 centroides <- diffCemigData$alimentador
 clusters <- data.frame()
+clustersSimul <- data.frame()
+resultSimul <- vector()
 df_aux <- data.frame()
-resultados <- data.frame()
+#resultados <- data.frame()
+#somatorio <- 0
+k <- 10
 
+```
+Aqui, vou calcular todos os dados gerais da população que serão necessários para chegar no valor da estatística de teste. Quais são esses dados:
+*Desvio Padrao; Variancia; e Media;
+*Somatorio da variavel diferenca de consumo
+*Somatorio do quadrado da variavel diferenca de consumo
+*Somatorio em i do quadrado da diferenca de consumo menos a media, isso dividido por 2 vezes a variancia
+*Parte fixa da estatistica de teste
 
-N <- nrow(diffCemigData)
-desvioPadrao <- sd(diffCemigData$difConsumo)
-variancia <- desvioPadrao^2
-media <- mean(diffCemigData$difConsumo)
-X <- 0
-somatorioSegTermo <- 0
-for (i in 1:nrow(diffCemigData))
-{
-  somatorioSegTermo <- somatorioSegTermo + ((diffCemigData$difConsumo[i]-media)^2)/(2*variancia)
-  X <- X + diffCemigData$difConsumo[i];
+```{r Calculos com base na Populacao}
+ti <- proc.time()
+N <- length(centroides) #Equivale ao total geral de observacoes
+mi <- mean(diffCemigData$difConsumo) #Media geral da diferenca de consumo
+sigma2 <- var(diffCemigData$difConsumo) #Variancia geral da diferenca de consumo
+sigma <- sd(diffCemigData$difConsumo) #Desvio padrao geral da diferenca de consumo
+X <- 0 #Somatorio da variavel diferenca de consumo
+Qgeral <- 0 #Somatorio do quadrado da variavel diferenca de consumo
+parte2 <- 0 #Somatorio em i do quadrado da diferenca de consumo menos a media, isso dividido por 2 vezes a variancia
+
+for (e in 1:N) {
+  X <- X + as.numeric(diffCemigData[e,4])
+  Qgeral <- Qgeral + as.numeric((diffCemigData[e,4])^2)
+  parte2 <- parte2 + ((diffCemigData[e,4]-mi)^2)/(2*sigma2)
 }
 
-estTesteParteFixa <- N*log(desvioPadrao)+somatorioSegTermo-N/2
+fixa <- as.numeric((N*log(sigma) + parte2 - N/2))
 
-k <- 10
-i <- 1
-Nz <- k
+proc.time() - ti
 
-while (i <= length(centroides)) {
+```
   
-  somatorioEmZ <- 0
-  somatorioForaZ <- 0
-  varianciaZ <- 0
-  Uz <- 0
-  lambda <- 0
-  Xz <- 0
-  lambda <- 0
-  resultados <- data.frame()
-  df_aux <- matrizDistancia[matrizDistancia$from == centroides[i], ]
+Abaixo, o algoritmo que gera os clusters
+Nele tambem sera calculado o sigma2Z e a estatistica de teste, aproveitando dos valores obtidos no chunck anterior
+No final, teremos em cada linha de clusters um cluster com a estatistica de teste na ultima coluna
 
-  for (j in 1:nrow(diffCemigData)) {
-    if (j <= k){
+Mudando a dinamica: vamos criar uma funcao responsavel por gerar os clusters. Assim podemos acionar ela no algoritmo de MonteCarlo
+*Matriz de distancia e a mesma, nao vai alterar
+*Unica coisa que precisa ser alterada e a base diffcemigdata e tbm a logica de guardar os clusters
+*resultsimul vai salvar o melhor resultado para cada iteracao. Depois geramos um histograma disso
+
+
+```{r Funcao que gera clusters}
+
+geradorCluster <- function(flag,dados){
+  #clusters <- data.frame()
+  i <- 1
+  while (i <= length(centroides)) {
+    estatistica <- 0
+    sigma2z <- 0
+    resultados <- data.frame()
+    somatorio <- 0 #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
+    Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
+    df_aux <- matrizDistancia[matrizDistancia$from == centroides[i], ]
+  
+    for (j in 1:k) {
+      resultados[i,j] <- as.character(df_aux[j, 2])
+      somatorio <- somatorio + as.numeric((dados[dados$alimentador == resultados[i,j],4])^2)
+      Xz <- Xz + as.numeric(dados[dados$alimentador == resultados[i,j],4])
+    }
+  
+    Nz <- as.numeric(length(resultados[i,]))
+    miz <- Xz/Nz
+    lambdaz <- (X - Xz)/(N - Nz)
+  
+    sigma2z <- (1/N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (Qgeral - somatorio) - 2*(X - Xz)*lambdaz + (N - Nz)*(lambdaz^2))
+    estatistica <- fixa - N*log(sqrt(sigma2z))
+  
+    resultados[i,j+1] <- estatistica
     
-    resultados[i,j] <- as.character(df_aux[j, 2])
-    Xz <- as.numeric(Xz) + as.numeric(diffCemigData[diffCemigData$alimentador==resultados[i,j],4])
-    somatorioEmZ <- somatorioEmZ + as.numeric((diffCemigData[diffCemigData$alimentador == resultados[i,j],4])^2)
-    }
-    else{
-      aux <- as.character(df_aux[j, 2])
-      somatorioForaZ <- somatorioForaZ + as.numeric((diffCemigData[diffCemigData$alimentador == aux,4])^2)
-    }
+    clusters <- rbind(clusters,resultados)
+    
+    i <- i+1
   }
   
-  Uz <- as.numeric(Xz/Nz)
-  lambda <- (X-Xz)/(N-Nz)
-  varianciaZ <- 1/N *(somatorioEmZ - 2*Xz*Uz + Nz*Uz^2 + somatorioForaZ - 2*(X-Xz)*lambda + (N - Nz)*lambda^2)
-  resultados[i,k+1] <- estTesteParteFixa - N*log(sqrt(varianciaZ))
+  clusters <- na.omit(clusters)
+  clusters <- clusters[order(clusters[k+1],decreasing = TRUE),]
   
-  clusters <- rbind(clusters,resultados)
-  i <- i+1
+  
+  if(flag==0){
+    return(clusters)
+  }
+  else{
+    return(as.numeric(clusters[1,k+1]))
+  }
+  
 }
-clusters <- na.omit(clusters)
 
+```
+
+Vou ter dois df: um que guarda minha base de dados que sera utilizada na simulacao, ou seja, aquela que sofrera randomizacao na variavel consumo. Outro para guardar os resultados de cada simulacao.
+Qual a principal diferenca: quando calculei apenas o cluster com os dados reais. Levantei todos os possiveis clusters e salvei no df clusters.Agora, de todos os clusters possiveis de serem gerados eu preciso apenas daquele com maior valor da estatistica de teste.
+Tempo decorrido: 996.30 segundos - cerca de 17 min
+
+```{r Gerando Clusters Base Original}
+system.time(clusters <- geradorCluster(0,diffCemigData))
+
+```
+
+
+```{r MonteCarlo}
+
+limite <- 100
+
+for (m in 1:limite) {
+  baseRandom <- diffCemigData
+  baseRandom[,4] <- sample(diffCemigData$difConsumo) #randomizando a coluna diferenca de consumo
+  system.time(resultSimul[m] <- geradorCluster(1,baseRandom))
+}
+
+```
+
+```{r}
+resultSimul
+length(resultSimul)
+histMatrixSimul <- hist(resultSimul)
+
+```
+
+
+```{r}
+histMatrixDist <- hist(matrizDistancia$distance)
 ```
 

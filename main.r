@@ -32,14 +32,17 @@ diffCemigData <- data.frame(list_data[1])
 excluidas <- data.frame(list_data[2])
 
 
-#matrizDistancia <- createEuclideanDistance (diffCemigData)
-#
-#centroides <- diffCemigData$alimentador
-#k <- 3
+matrizDistancia <- createEuclideanDistance (diffCemigData)
 
-#TestEstatistic <- EstatisticTestElementsCalculator(centroides,diffCemigData)
-#
-#clusters <- geradorCluster(FALSE,diffCemigData,TestEstatistic,k)
-#resultSimul <- monteCarloSimu(diffCemigData,TestEstatistic,k)
+centroides <- diffCemigData$alimentador
+k <- 3
+TestEstatistic <- EstatisticTestElementsCalculator(centroides,diffCemigData)
+
+clusters <- geradorCluster(FALSE,diffCemigData,TestEstatistic,k)
+resultSimul <- monteCarloSimu(diffCemigData,TestEstatistic,k)
+
+length(resultSimul)
+histMatrixSimul <- hist(resultSimul)
+histMatrixDist <- hist(matrizDistancia$distance)
 
 

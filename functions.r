@@ -158,6 +158,6 @@ monteCarloSimu <- function(diffCemigData,TestEstatistic,k){
   }
   return (resultSimul)
 }
-                          
+
 
 
