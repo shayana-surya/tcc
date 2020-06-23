@@ -1,5 +1,4 @@
 createData <- function(joinDados){
-  
   diffCemigData <- data.table(alimentador = character(),
                               x = numeric(),
                               y = numeric(),
@@ -59,7 +58,6 @@ createData <- function(joinDados){
         dados2018.consumo = joinDados$ConsumoMedido.y[i]
       ),fill=TRUE)
     }
-    
   }
   list_data <- list(diffCemigData,excluidas)
   return (list_data);
@@ -67,97 +65,154 @@ createData <- function(joinDados){
 
 
 createEuclideanDistance <- function(diffCemigData) {
-  
-  matrizDistancia <- dist.mat(diffCemigData,"alimentador","y","x",diffCemigData,"alimentador","y","x", unit = "km")
-  matrizDistancia <- matrizDistancia[order(matrizDistancia$from,matrizDistancia$distance),]
+  matrizDistancia <- dist.mat(diffCemigData,"ID","y","x",diffCemigData,"ID","y","x")
+  matrizDistancia <- matrizDistancia[order( matrizDistancia$from,matrizDistancia$distance),]
+  matrizDistancia$from <- as.numeric(as.character(matrizDistancia$from))
+  matrizDistancia$to <- as.numeric(as.character(matrizDistancia$to))
   
   return (matrizDistancia)
 }
 
 EstatisticTestElementsCalculator <- function(centroides,diffCemigData) {
   TestEstatistic <- data.frame(N = length(centroides), #Equivale ao total geral de observacoes
-                               mi = mean(diffCemigData$difConsumo), #Media geral da diferenca de consumo
-                               sigma2 =  var(diffCemigData$difConsumo),  #Variancia geral da diferenca de consumo
-                               sigma = sd(diffCemigData$difConsumo), #Desvio padrao geral da diferenca de consumo
-                              X = 0, #Somatorio da variavel diferenca de consumo
-                              Qgeral = 0, #Somatorio do quadrado da variavel diferenca de consumo
-                              parte2 = 0, #Somatorio em i do quadrado da diferenca de consumo menos a media, isso dividido por 2 vezes a variancia
-                              fixa= 0
+                                X = 0, #Somatorio da variavel diferenca de consumo
+                                Qgeral = 0 #Somatorio do quadrado da variavel diferenca de consumo
   )
   
   for (e in 1:TestEstatistic$N) {
-    TestEstatistic$X <- TestEstatistic$X + as.numeric(diffCemigData[e,4])
-    TestEstatistic$Qgeral <- TestEstatistic$Qgeral + as.numeric((diffCemigData[e,4])^2)
-    TestEstatistic$parte2 <- TestEstatistic$parte2 + ((diffCemigData[e,4]-TestEstatistic$mi)^2)/(2*TestEstatistic$sigma2)
+    TestEstatistic$X <- TestEstatistic$X + diffCemigData[e,4]
+    TestEstatistic$Qgeral <- TestEstatistic$Qgeral + (diffCemigData[e,4])^2
   }
-  
-  TestEstatistic$fixa <- as.numeric((TestEstatistic$N*log(TestEstatistic$sigma) + TestEstatistic$parte2 - TestEstatistic$N/2))
-  
   
   return(TestEstatistic)
 }
 
 
-geradorCluster <- function(flagSimulacao,dados,TestEstatistic,k){
-  i <- 1
-  clustersSimul <- data.frame()
-  clusters <- data.frame()
-  while (i <= length(centroides)) {
+geradorCluster <- function(TestEst,isSimul,matrizDistancia,dados,k){
+  resultados <- data.frame()
+  #pos <- c(rep(TRUE,k),rep(FALSE,(nrow(dados)-k)))
+  
+  for (i in 1:nrow(dados)) {
     estatistica <- 0
     sigma2z <- 0
-    resultados <- data.frame()
     somatorio <- 0 #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
     Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
     df_aux <- matrizDistancia[matrizDistancia$from == centroides[i], ]
+
+    #resultados[i,] <- df_aux[pos, 2]
+    #somatorio <- sum(dados[pos,4]^2)
+    #Xz <- sum(dados[pos,4])
     
-    for (j in 1:k) {
-      resultados[i,j] <- as.character(df_aux[j, 2])
-      somatorio <- somatorio + as.numeric((dados[dados$alimentador == resultados[i,j],4])^2)
-      Xz <- Xz + as.numeric(dados[dados$alimentador == resultados[i,j],4])
-    }
+    #for (j in 1:k) {
+    #  resultados[i,j] <- df_aux[j, 2]
+    #  linha <- resultados[i,j]
+    #  somatorio <- somatorio + (dados[linha,4])^2
+    #  Xz <- Xz + dados[linha,4]
+    #}
     
-    Nz <- as.numeric(length(resultados[i,]))
+    Nz <- k
     miz <- Xz/Nz
-    lambdaz <- (TestEstatistic$X - Xz)/(TestEstatistic$N - Nz)
+    lambdaz <- (TestEst$X - Xz)/(TestEst$N - Nz)
+    sigma2z <- (1/TestEst$N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (TestEst$Qgeral - somatorio) - 2*(TestEst$X - Xz)*lambdaz + (TestEst$N - Nz)*(lambdaz^2))
+    estatistica <-(- TestEst$N*log(sqrt(sigma2z)))
     
-    sigma2z <- (1/TestEstatistic$N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (TestEstatistic$Qgeral - somatorio) - 2*(TestEstatistic$X - Xz)*lambdaz + (TestEstatistic$N - Nz)*(lambdaz^2))
-    estatistica <- TestEstatistic$fixa - TestEstatistic$N*log(sqrt(sigma2z))
-    
-    resultados[i,j+1] <- estatistica
-    if(flagSimulacao == FALSE){
-      clusters <- rbind(clusters,resultados) #se estou gerando os clusters iniciais, com dados originais
-    }
-    else{
-      clustersSimul <- rbind(clustersSimul,resultados)
-    }
-    
-    i <- i+1
+    resultados[i,k+1] <- estatistica
+  
   }
   
-  if(flagSimulacao == FALSE){
-    clusters <- na.omit(clusters)
-    clusters <- clusters[order(clusters[k+1],decreasing = TRUE),]
-    return(clusters)
+  resultados <- resultados[order(resultados[k+1],decreasing = TRUE),]
+ 
+  
+  if(isSimul== FALSE){
+    return(resultados)
   }
   else{
-    clustersSimul <- na.omit(clustersSimul)
-    clustersSimul <- clustersSimul[order(clustersSimul[k+1],decreasing = TRUE),]
-    return(as.numeric(clustersSimul[1,k+1]))
+    return(resultados[1,k+1])
   }
   
 }
+  
 
-monteCarloSimu <- function(diffCemigData,TestEstatistic,k){
+monteCarloSimu <- function(matrizDistancia,diffCemigData,TestEstatistic,k){
   limite <- 5
   resultSimul <- vector()
   
   for (m in 1:limite) {
     baseRandom <- diffCemigData
     baseRandom[,4] <- sample(diffCemigData$difConsumo) #randomizando a coluna diferenca de consumo
-    resultSimul[m] <- geradorCluster(TRUE,baseRandom,TestEstatistic,k)
+    resultSimul[m] <- geradorCluster(TestEstatistic,TRUE,matrizDistancia,baseRandom,k)
   }
   return (resultSimul)
 }
 
 
+clustersSignificativos <- function(resultSimul,clusters,k){
 
+  alpha <- 0.05
+  resultSimul <- resultSimul[order(resultSimul,decreasing = TRUE)] #ordenando ele do maior para o menor
+  significativos <- vector()
+  
+  #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
+  for(i in 1:nrow(clusters)){
+    contador <- 0
+    pvalor <- 0.0
+    
+    for(j in 1:length(resultSimul)){
+      
+      if(clusters[i,k+1] < resultSimul[j]){
+        contador <- contador + 1
+      }
+      else{
+        break()
+      }
+      
+    }
+    
+    pvalor <- contador/(length(resultSimul)+1)
+    
+    if(pvalor < alpha){
+      significativos[length(significativos)+1] <- clusters[i,1] #salvando o centroide daquele cluster
+    }
+    else{
+      #se eu cair aqui, entendo que nao vai ter mais nenhum significativo
+      break()
+    }
+    
+  }
+return (significativos)
+}
+
+
+
+
+geradorClusterPorRaio <- function(TestEst,isSimul,matrizDistancia,dados,raio){
+  
+  resultados <- list()
+  
+  for (i in 1:nrow(dados)){
+
+    resultadosParciais <- vector()
+    df_aux <- matrizDistancia[matrizDistancia$from == centroides[i], ]
+    pos <- (df_aux$distance < raio)
+    resultadosParciais <- df_aux[pos, 2]
+    somatorio <- sum(dados[pos,4]^2)
+    Xz <- sum(dados[pos,4])
+    j <- sum(pos)
+    Nz <- j 
+    miz <- Xz/Nz
+    lambdaz <- (TestEst$X - Xz)/(TestEst$N - Nz)
+    sigma2z <- (1/TestEst$N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (TestEst$Qgeral - somatorio) - 2*(TestEst$X - Xz)*lambdaz + (TestEst$N - Nz)*(lambdaz^2))
+    estatistica <-(- TestEst$N*log(sqrt(sigma2z)))
+    resultadosParciais[j+ 1] <- estatistica
+    resultados[[i]] <- resultadosParciais
+  }
+  
+  
+  if(isSimul== FALSE){
+    return(resultados)
+  }
+  else{
+    return(resultados[1,k+1])
+  }
+  
+}

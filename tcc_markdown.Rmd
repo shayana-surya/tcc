@@ -194,7 +194,7 @@ geradorCluster <- function(flag,dados){
     df_aux <- matrizDistancia[matrizDistancia$from == centroides[i], ]
   
     for (j in 1:k) {
-      resultados[i,j] <- as.character(df_aux[j, 2])
+      resultados[i,j] <- df_aux[j, 2]
       somatorio <- somatorio + as.numeric((dados[dados$alimentador == resultados[i,j],4])^2)
       Xz <- Xz + as.numeric(dados[dados$alimentador == resultados[i,j],4])
     }

@@ -51,13 +51,27 @@ ui <- fluidPage(
              tabPanel("EDA",
                       sidebarLayout(
                         sidebarPanel(
-                          selectInput("var","1. Selecione o histograma que deseja vizualizar", choice = c("Simulação de Monte Carlo" = 1, "Dados Originais" =2),selected = 2)
+                          selectInput("var2","1. Selecione o histograma que deseja vizualizar", choice = c("Simulação de Monte Carlo" = 1, "Dados Originais" =2),selected = 2)
                         ),
                         mainPanel(
                           plotOutput("plot")
                         )
                       )
                   ),
+             tabPanel("Dados de Entrada",
+                      sidebarLayout(
+                        sidebarPanel(
+                          selectInput("numero","1. Selecione o número de alimentadoras dentro do cluster", choice = c("3" = 1, "10" =2, "100" = 3,selected = 1)),
+                          selectInput("raio","1. Selecione o tamanho do raio do cluster", choice = c("1000" = 1, "5000" =2, "10000" = 3,selected = 1)),
+                          selectInput("simulacao","1. Selecione o número de simulações", choice = c("10" = 1, "100" =2, "1000" = 3,selected = 1)),
+                        ),
+                        mainPanel(
+                          tableOutput("dataNumero"),
+                          tableOutput("dataRaio"),
+                          tableOutput("dataSimulacao"),
+                        )
+                      )
+             ),
              tabPanel("Mapa",
                       sidebarLayout(
                         sidebarPanel(
@@ -87,19 +101,23 @@ server <- function(input,output,session) {
     else{
       dados2013}
   })
-  output$data2 <- renderTable({
-    if(input$var== 1)
-      output$plot <- renderPlot({
+  output$plot <- renderPlot({
+    if(input$var2== 1)
       histMatrixSimul
-      })
     else
-      output$plot <- renderPlot({
       histMatrixDist
-    })
+  })
+  
+  output$dataNumero <- renderTable({
+    if(input$numero == 1){
+      dados2013}
+    else if(input$numero == 2){
+      dados2018}
+    else{
+      diffCemigData}
   })
   
   output$mapa <- renderLeaflet(mapa)
-  
 }
 
 shinyApp(ui,server)
