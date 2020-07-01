@@ -51,9 +51,22 @@ clustersRaio <- geradorClusterPorRaio(TestEstatistic,FALSE,matrizDistancia,diffC
 #}
 #resultados
 
+k <- 30
+bound <- 100
+
+#para k = 30 levamos 155,88 segundos
+ti <- proc.time()
 clusters <- geradorCluster(TestEstatistic,FALSE,matrizDistancia,diffCemigData,k)
-resultSimul <- monteCarloSimu(TestEstatistic,matrizDistancia,diffCemigData,k)
+proc.time() - ti
+
+#200 simulacoes com k=10 levaram 28.694,02 segundos. Quase 8hrs
+ti <- proc.time()
+resultSimul <- monteCarloSimu(TestEstatistic,matrizDistancia,diffCemigData,k,bound)
+proc.time() - ti
+
+ti <- proc.time()
 significativos <- clustersSignificativos(resultSimul,clusters,k)
+proc.time() - ti
 
 histMatrixSimul <- hist(resultSimul)
 histMatrixDist <- hist(matrizDistancia$distance)

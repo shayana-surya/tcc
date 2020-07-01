@@ -90,31 +90,29 @@ EstatisticTestElementsCalculator <- function(centroides,diffCemigData) {
 
 geradorCluster <- function(TestEst,isSimul,matrizDistancia,dados,k){
   resultados <- data.frame()
-  #pos <- c(rep(TRUE,k),rep(FALSE,(nrow(dados)-k)))
   
   for (i in 1:nrow(dados)) {
     estatistica <- 0
     sigma2z <- 0
     somatorio <- 0 #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
     Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
-    df_aux <- matrizDistancia[matrizDistancia$from == centroides[i], ]
+    df_aux <- matrizDistancia[matrizDistancia$from == i,]
 
     #resultados[i,] <- df_aux[pos, 2]
     #somatorio <- sum(dados[pos,4]^2)
     #Xz <- sum(dados[pos,4])
     
-    #for (j in 1:k) {
-    #  resultados[i,j] <- df_aux[j, 2]
-    #  linha <- resultados[i,j]
-    #  somatorio <- somatorio + (dados[linha,4])^2
-    #  Xz <- Xz + dados[linha,4]
-    #}
+    for (j in 1:k) {
+      resultados[i,j] <- df_aux[j, 2]
+      somatorio <- somatorio + (dados[resultados[i,j],4])^2
+      Xz <- Xz + dados[resultados[i,j],4]
+    }
     
     Nz <- k
     miz <- Xz/Nz
     lambdaz <- (TestEst$X - Xz)/(TestEst$N - Nz)
     sigma2z <- (1/TestEst$N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (TestEst$Qgeral - somatorio) - 2*(TestEst$X - Xz)*lambdaz + (TestEst$N - Nz)*(lambdaz^2))
-    estatistica <-(- TestEst$N*log(sqrt(sigma2z)))
+    estatistica <- (- TestEst$N*log(sqrt(sigma2z)))
     
     resultados[i,k+1] <- estatistica
   
@@ -133,11 +131,11 @@ geradorCluster <- function(TestEst,isSimul,matrizDistancia,dados,k){
 }
   
 
-monteCarloSimu <- function(matrizDistancia,diffCemigData,TestEstatistic,k){
-  limite <- 5
+monteCarloSimu <- function(TestEstatistic,matrizDistancia,diffCemigData,k,bound){
+  
   resultSimul <- vector()
   
-  for (m in 1:limite) {
+  for (m in 1:bound) {
     baseRandom <- diffCemigData
     baseRandom[,4] <- sample(diffCemigData$difConsumo) #randomizando a coluna diferenca de consumo
     resultSimul[m] <- geradorCluster(TestEstatistic,TRUE,matrizDistancia,baseRandom,k)
@@ -154,21 +152,9 @@ clustersSignificativos <- function(resultSimul,clusters,k){
   
   #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
   for(i in 1:nrow(clusters)){
-    contador <- 0
-    pvalor <- 0.0
+    pvalor <- 0
     
-    for(j in 1:length(resultSimul)){
-      
-      if(clusters[i,k+1] < resultSimul[j]){
-        contador <- contador + 1
-      }
-      else{
-        break()
-      }
-      
-    }
-    
-    pvalor <- contador/(length(resultSimul)+1)
+    pvalor <- sum(resultSimul > clusters[i,k+1])/(length(resultSimul)+1)
     
     if(pvalor < alpha){
       significativos[length(significativos)+1] <- clusters[i,1] #salvando o centroide daquele cluster
@@ -179,7 +165,6 @@ clustersSignificativos <- function(resultSimul,clusters,k){
     }
     
   }
-return (significativos)
 }
 
 
