@@ -89,7 +89,7 @@ EstatisticTestElementsCalculator <- function(diffCemigData) {
 
 ######################### CALCULO POR QUANTIDADE K DE CLUSTERS  #####################################
 
-geradorCluster <- function(TestEst,isSimul,matrizDistancia,dados,k){
+geradorCluster <- function(TestEst, matrizDistancia, dados, k){
   resultados <- data.frame()
   
   for (i in 1:nrow(dados)) {
@@ -99,15 +99,9 @@ geradorCluster <- function(TestEst,isSimul,matrizDistancia,dados,k){
     Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
     df_aux <- matrizDistancia[matrizDistancia$from == i,]
 
-    #resultados[i,] <- df_aux[pos, 2]
-    #somatorio <- sum(dados[pos,4]^2)
-    #Xz <- sum(dados[pos,4])
-    
-    for (j in 1:k) {
-      resultados[i,j] <- df_aux[j, 2]
-      somatorio <- somatorio + (dados[resultados[i,j],4])^2
-      Xz <- Xz + dados[resultados[i,j],4]
-    }
+    pos <- df_aux[1:k, 2]
+    somatorio <- sum(dados[pos,4]^2)
+    Xz <- sum(dados[pos,4])
     
     Nz <- k
     miz <- Xz/Nz
@@ -115,31 +109,54 @@ geradorCluster <- function(TestEst,isSimul,matrizDistancia,dados,k){
     sigma2z <- (1/TestEst$N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (TestEst$Qgeral - somatorio) - 2*(TestEst$X - Xz)*lambdaz + (TestEst$N - Nz)*(lambdaz^2))
     estatistica <- (- TestEst$N*log(sqrt(sigma2z)))
     
-    resultados[i,k+1] <- estatistica
+    pos[k+1] <- estatistica
+    resultados <- rbind(resultados,pos)
   
   }
   
   resultados <- resultados[order(resultados[k+1],decreasing = TRUE),]
- 
   
-  if(isSimul== FALSE){
-    return(resultados)
+  return(resultados)
+  
+}
+
+geradorClusterSimul <- function(TestEst,dados,clusters,k){
+  
+  for (i in 1:nrow(clusters)) {
+    estatistica <- 0
+    sigma2z <- 0
+    somatorio <- 0 #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
+    Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
+    
+    pos <- as.numeric(clusters[i,1:k])
+    somatorio <- sum(dados[pos,4]^2)
+    Xz <- sum(dados[pos,4])
+    
+    Nz <- k
+    miz <- Xz/Nz
+    lambdaz <- (TestEst$X - Xz)/(TestEst$N - Nz)
+    sigma2z <- (1/TestEst$N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (TestEst$Qgeral - somatorio) - 2*(TestEst$X - Xz)*lambdaz + (TestEst$N - Nz)*(lambdaz^2))
+    estatistica <- (- TestEst$N*log(sqrt(sigma2z)))
+    
+    clusters[i,k+1] <- estatistica
+    
   }
-  else{
-    return(resultados[1,k+1])
-  }
+  
+  clusters <- clusters[order(clusters[k+1],decreasing = TRUE),]
+  
+  return(clusters[1,k+1])
   
 }
   
 
-monteCarloSimu <- function(TestEstatistic,matrizDistancia,diffCemigData,k,bound){
+monteCarloSimu <- function(TestEstatistic, diffCemigData, clusters, k, bound){
   
   resultSimul <- vector()
   
   for (m in 1:bound) {
     baseRandom <- diffCemigData
     baseRandom[,4] <- sample(diffCemigData$difConsumo) #randomizando a coluna diferenca de consumo
-    resultSimul[m] <- geradorCluster(TestEstatistic,TRUE,matrizDistancia,baseRandom,k)
+    resultSimul[m] <- geradorClusterSimul(TestEstatistic, baseRandom, clusters, k)
   }
   return (resultSimul)
 }
