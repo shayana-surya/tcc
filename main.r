@@ -34,27 +34,32 @@ diffCemigData <- data.frame(list_data[1])
 diffCemigData$ID <- 1:nrow(diffCemigData)
 excluidas <- data.frame(list_data[2])
 
+
+bound <- 1000
+raio <- 1000
+
 ti <- proc.time()
 matrizDistancia <- createEuclideanDistance(diffCemigData)
 proc.time() - ti
 
-#centroides <- diffCemigData$ID
 TestEstatistic <- EstatisticTestElementsCalculator(diffCemigData)
 
-clustersRaio <- geradorClusterPorRaio(TestEstatistic,FALSE,matrizDistancia,diffCemigData,raio)
+ti <- proc.time()
+clustersRaio <- geradorClusterPorRaio(TestEstatistic,matrizDistancia,diffCemigData,raio)
+proc.time() - ti
 
-#k <- 3
-#resultados <- data.frame()
-#pos <- c(rep(TRUE,k),rep(FALSE,(nrow(diffCemigData)-k)))
-#for (i in 1:k)
-#{
-#resultados[i,] <- diffCemigData$ID[pos]
-#
-#}
-#resultados
+# Ainda n ta funcionando
+#ti <- proc.time()
+#resultSimulRaio <- monteCarloSimuRaio(TestEstatistic, diffCemigData, clustersRaio, raio, bound)
+#proc.time() - ti
+#print(resultSimulRaio)
+
+# ti <- proc.time()
+# significativosRaio <- clustersSignificativosRaio(resultSimulRaio,clustersRaio,raio)
+# proc.time() - ti
 
 k <- 250
-bound <- 1000
+
 
 #para k = 30 levamos 155,88 segundos
 #com a remocao do segundo for e inclusao do rbind para alimentar resultados, o tempo caiu para 115,22 segundos

@@ -1,3 +1,4 @@
+
 createData <- function(joinDados){
   diffCemigData <- data.table(alimentador = character(),
                               x = numeric(),
@@ -66,15 +67,16 @@ createData <- function(joinDados){
 
 createEuclideanDistance <- function(diffCemigData) {
   matrizDistancia <- dist.mat(diffCemigData,"ID","y","x",diffCemigData,"ID","y","x")
-  matrizDistancia <- matrizDistancia[order( matrizDistancia$from,matrizDistancia$distance),]
   matrizDistancia$from <- as.numeric(as.character(matrizDistancia$from))
   matrizDistancia$to <- as.numeric(as.character(matrizDistancia$to))
+  matrizDistancia <- matrizDistancia[order( matrizDistancia$from,matrizDistancia$distance),]
+  
   
   return (matrizDistancia)
 }
 
 EstatisticTestElementsCalculator <- function(diffCemigData) {
-  TestEstatistic <- data.frame(N = length(diffCemigData), #Equivale ao total geral de observacoes
+  TestEstatistic <- data.frame(N = nrow(diffCemigData), #Equivale ao total geral de observacoes
                                 X = 0, #Somatorio da variavel diferenca de consumo
                                 Qgeral = 0 #Somatorio do quadrado da variavel diferenca de consumo
   )
@@ -181,80 +183,102 @@ clustersSignificativos <- function(resultSimul,clusters,k){
       #se eu cair aqui, entendo que nao vai ter mais nenhum significativo
       break()
     }
-    
   }
 }
 
 ######################### CALCULO POR RAIO #####################################
 
 
-geradorClusterPorRaio <- function(TestEst,isSimul,matrizDistancia,dados,raio){
+geradorClusterPorRaio <- function(TestEst,matrizDistancia,diffCemigData,raio){
   
   resultados <- list()
   
-  for (i in 1:nrow(dados)){
-
+  for (i in 1:nrow(diffCemigData)){
     resultadosParciais <- vector()
-    df_aux <- matrizDistancia[matrizDistancia$from == diffCemigData$ID[i], ]
-    pos <- (df_aux$distance < raio)
-    resultadosParciais <- df_aux[pos, 2]
-    somatorio <- sum(dados[pos,4]^2)
-    Xz <- sum(dados[pos,4])
-    j <- sum(pos)
-    Nz <- j 
+    df_aux <- matrizDistancia[matrizDistancia$from == i, ]
+    pos <- df_aux[(df_aux$distance < raio),2] # alimentadoras mais prox
+    resultadosParciais <- pos
+    
+    somatorio <- sum(diffCemigData[pos,4]^2)
+    Xz <- sum(diffCemigData[pos,4])
+    j <- sum((df_aux$distance < raio))
+    Nz <- j
     miz <- Xz/Nz
     lambdaz <- (TestEst$X - Xz)/(TestEst$N - Nz)
-    sigma2z <- (1/TestEst$N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (TestEst$Qgeral - somatorio) - 2*(TestEst$X - Xz)*lambdaz + (TestEst$N - Nz)*(lambdaz^2))
-    estatistica <-(- TestEst$N*log(sqrt(sigma2z)))
+    sigma2z <- 1/TestEst$N * (somatorio - 2*Xz*miz + Nz*miz^2 + (TestEst$Qgeral - somatorio) - 2*(TestEst$X - Xz)*lambdaz + (TestEst$N - Nz)*((lambdaz)^2))
+    estatistica <- (- TestEst$N*log(sqrt(sigma2z)))
+    
     resultadosParciais[j+ 1] <- estatistica
     resultados[[i]] <- resultadosParciais
   }
-  
-  #resultados <- resultados[order(resultados[k+1],decreasing = TRUE),]
-  list.order(resultados,())
-  
-  if(isSimul== FALSE){
     return(resultados)
-  }
-  else{
-    #return(resultados[[1]])
-  }
-  
 }
-
-
-monteCarloSimuRaio <- function(TestEstatistic,matrizDistancia,diffCemigData,k,bound){
+ 
+monteCarloSimuRaio <- function(TestEst,diffCemigData,clustersRaio,raio,bound){
   
-  resultSimul <- list()
+  resultSimul <- vector()
   
   for (m in 1:bound) {
     baseRandom <- diffCemigData
     baseRandom[,4] <- sample(diffCemigData$difConsumo) #randomizando a coluna diferenca de consumo
-    resultSimul[[m]] <- geradorClusterPorRaio(TestEstatistic,TRUE,matrizDistancia,baseRandom,k)
+    resultSimul[m] <- geradorClusterRaioSimul(TestEst,baseRandom,clustersRaio,raio)
   }
   return (resultSimul)
 }
 
+geradorClusterRaioSimul <- function(TestEst,baseRandom,clustersRaio,raio){
+  
+  #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
+  # Xz Somatorio da variavel diferenca de consumo dentro do 
+  # a diferença de consumo é alterada mas não a distancia 
+  bestResult <- 0
+  estatisticaAux <- 0
 
-clustersSignificativosRaio <- function(resultSimul,clusters,k){
-  
-  alpha <- 0.05
-  resultSimul <- resultSimul[order(resultSimul,decreasing = TRUE)] #ordenando ele do maior para o menor
-  significativos <- vector()
-  
-  #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
-  for(i in 1:nrow(clusters)){
-    pvalor <- 0
+  for (i in 1:nrow(baseRandom)) {
+    j <- length(clustersRaio[[i]]) - 1 # numero de elemento no cluster menos a estatistica de teste que esta salva na ultima casa
+
+    pos <- as.numeric(clustersRaio[[i]][1:j])
     
-    pvalor <- sum(resultSimul > clusters[i,k+1])/(length(resultSimul)+1)
+    somatorio <- sum(baseRandom[pos,4]^2)
+    Xz <- sum(baseRandom[pos,4])
+
+    Nz <- j
+    miz <- Xz/Nz
+    lambdaz <- (TestEst$X - Xz)/(TestEst$N - Nz)
+    sigma2z <- 1/TestEst$N * (  somatorio - 2*Xz*miz + Nz*miz^2 + (TestEst$Qgeral - somatorio) - 2*(TestEst$X - Xz)*lambdaz + (TestEst$N - Nz)*((lambdaz)^2))
     
-    if(pvalor < alpha){
-      significativos[length(significativos)+1] <- clusters[i,1] #salvando o centroide daquele cluster
+    estatisticaAux <- (- TestEst$N*log(sqrt(sigma2z)))
+    
+    if(is.null(estatisticaAux)){
+      estatisticaAux = 0
     }
-    else{
-      #se eu cair aqui, entendo que nao vai ter mais nenhum significativo
-      break()
+    else if(bestResult == 0 || estatisticaAux > bestResult){
+      bestResult <- estatisticaAux
     }
-    
   }
+  return(bestResult)
 }
+
+# ctrl + shift + c
+# 
+# clustersSignificativosRaio <- function(resultSimul,clusters,k){
+#   
+#   alpha <- 0.05
+#   resultSimul <- resultSimul[order(resultSimul,decreasing = TRUE)] #ordenando ele do maior para o menor
+#   significativos <- vector()
+#   
+#   #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
+#   for(i in 1:nrow(clusters)){
+#     pvalor <- 0
+#     
+#     pvalor <- sum(resultSimul > clusters[i,k+1])/(length(resultSimul)+1)
+#     
+#     if(pvalor < alpha){
+#       significativos[length(significativos)+1] <- clusters[i,1] #salvando o centroide daquele cluster
+#     }
+#     else{
+#       #se eu cair aqui, entendo que nao vai ter mais nenhum significativo
+#       break()
+#     }
+#   }
+# }
