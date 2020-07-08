@@ -35,12 +35,15 @@ diffCemigData$ID <- 1:nrow(diffCemigData)
 excluidas <- data.frame(list_data[2])
 raio <- 1000
 
+ti <- proc.time()
 matrizDistancia <- createEuclideanDistance(diffCemigData)
+proc.time() - ti
 
-#centroides <- diffCemigData$ID
+centroides <- diffCemigData$ID
 TestEstatistic <- EstatisticTestElementsCalculator(diffCemigData)
 
 clustersRaio <- geradorClusterPorRaio(TestEstatistic,FALSE,matrizDistancia,diffCemigData,raio)
+
 
 #k <- 3
 #resultados <- data.frame()
@@ -52,17 +55,21 @@ clustersRaio <- geradorClusterPorRaio(TestEstatistic,FALSE,matrizDistancia,diffC
 #}
 #resultados
 
-k <- 30
-bound <- 100
+k <- 250
+bound <- 1000
 
 #para k = 30 levamos 155,88 segundos
+#com a remocao do segundo for e inclusao do rbind para alimentar resultados, o tempo caiu para 115,22 segundos
+#para k igual a 250 levou-se 125,68 segundos
 ti <- proc.time()
-clusters <- geradorCluster(TestEstatistic,FALSE,matrizDistancia,diffCemigData,k)
+clusters <- geradorCluster(TestEstatistic, matrizDistancia, diffCemigData, k)
 proc.time() - ti
 
 #200 simulacoes com k=10 levaram 28.694,02 segundos. Quase 8hrs
+# 66,77 segundos para uma simulacao de 100 iteracoes com k igual a 30. Isso apos as alteracoes
+# 1000 simulações para k igual a 250 levou 3.601,34 segundos ou 1hr
 ti <- proc.time()
-resultSimul <- monteCarloSimu(TestEstatistic,matrizDistancia,diffCemigData,k,bound)
+resultSimul <- monteCarloSimu(TestEstatistic, diffCemigData, clusters, k, bound)
 proc.time() - ti
 
 ti <- proc.time()
@@ -70,8 +77,4 @@ significativos <- clustersSignificativos(resultSimul,clusters,k)
 proc.time() - ti
 
 histMatrixSimul <- hist(resultSimul)
-histMatrixDist <- hist(matrizDistancia$distance)
-
-
-
 
