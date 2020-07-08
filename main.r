@@ -10,6 +10,7 @@ library(readxl)
 library(data.table)
 library(REAT)
 library(Rcpp)
+library(rlist)
 source(file="functions.r")
 
 
@@ -32,14 +33,14 @@ list_data <- createData(joinDados)
 diffCemigData <- data.frame(list_data[1])
 diffCemigData$ID <- 1:nrow(diffCemigData)
 excluidas <- data.frame(list_data[2])
-
+raio <- 1000
 
 matrizDistancia <- createEuclideanDistance(diffCemigData)
 
-centroides <- diffCemigData$ID
-TestEstatistic <- EstatisticTestElementsCalculator(centroides,diffCemigData)
+#centroides <- diffCemigData$ID
+TestEstatistic <- EstatisticTestElementsCalculator(diffCemigData)
 
-clustersRaio <- geradorClusterPorRaio(TestEstatistic,FALSE,matrizDistancia,diffCemigData,1000)
+clustersRaio <- geradorClusterPorRaio(TestEstatistic,FALSE,matrizDistancia,diffCemigData,raio)
 
 #k <- 3
 #resultados <- data.frame()

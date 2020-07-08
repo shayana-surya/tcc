@@ -73,8 +73,8 @@ createEuclideanDistance <- function(diffCemigData) {
   return (matrizDistancia)
 }
 
-EstatisticTestElementsCalculator <- function(centroides,diffCemigData) {
-  TestEstatistic <- data.frame(N = length(centroides), #Equivale ao total geral de observacoes
+EstatisticTestElementsCalculator <- function(diffCemigData) {
+  TestEstatistic <- data.frame(N = length(diffCemigData), #Equivale ao total geral de observacoes
                                 X = 0, #Somatorio da variavel diferenca de consumo
                                 Qgeral = 0 #Somatorio do quadrado da variavel diferenca de consumo
   )
@@ -87,6 +87,7 @@ EstatisticTestElementsCalculator <- function(centroides,diffCemigData) {
   return(TestEstatistic)
 }
 
+######################### CALCULO POR QUANTIDADE K DE CLUSTERS  #####################################
 
 geradorCluster <- function(TestEst,isSimul,matrizDistancia,dados,k){
   resultados <- data.frame()
@@ -167,7 +168,7 @@ clustersSignificativos <- function(resultSimul,clusters,k){
   }
 }
 
-
+######################### CALCULO POR RAIO #####################################
 
 
 geradorClusterPorRaio <- function(TestEst,isSimul,matrizDistancia,dados,raio){
@@ -177,7 +178,7 @@ geradorClusterPorRaio <- function(TestEst,isSimul,matrizDistancia,dados,raio){
   for (i in 1:nrow(dados)){
 
     resultadosParciais <- vector()
-    df_aux <- matrizDistancia[matrizDistancia$from == centroides[i], ]
+    df_aux <- matrizDistancia[matrizDistancia$from == diffCemigData$ID[i], ]
     pos <- (df_aux$distance < raio)
     resultadosParciais <- df_aux[pos, 2]
     somatorio <- sum(dados[pos,4]^2)
@@ -192,12 +193,51 @@ geradorClusterPorRaio <- function(TestEst,isSimul,matrizDistancia,dados,raio){
     resultados[[i]] <- resultadosParciais
   }
   
+  #resultados <- resultados[order(resultados[k+1],decreasing = TRUE),]
+  list.order(resultados,())
   
   if(isSimul== FALSE){
     return(resultados)
   }
   else{
-    return(resultados[1,k+1])
+    #return(resultados[[1]])
   }
   
+}
+
+
+monteCarloSimuRaio <- function(TestEstatistic,matrizDistancia,diffCemigData,k,bound){
+  
+  resultSimul <- list()
+  
+  for (m in 1:bound) {
+    baseRandom <- diffCemigData
+    baseRandom[,4] <- sample(diffCemigData$difConsumo) #randomizando a coluna diferenca de consumo
+    resultSimul[[m]] <- geradorClusterPorRaio(TestEstatistic,TRUE,matrizDistancia,baseRandom,k)
+  }
+  return (resultSimul)
+}
+
+
+clustersSignificativosRaio <- function(resultSimul,clusters,k){
+  
+  alpha <- 0.05
+  resultSimul <- resultSimul[order(resultSimul,decreasing = TRUE)] #ordenando ele do maior para o menor
+  significativos <- vector()
+  
+  #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
+  for(i in 1:nrow(clusters)){
+    pvalor <- 0
+    
+    pvalor <- sum(resultSimul > clusters[i,k+1])/(length(resultSimul)+1)
+    
+    if(pvalor < alpha){
+      significativos[length(significativos)+1] <- clusters[i,1] #salvando o centroide daquele cluster
+    }
+    else{
+      #se eu cair aqui, entendo que nao vai ter mais nenhum significativo
+      break()
+    }
+    
+  }
 }
