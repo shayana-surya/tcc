@@ -19,14 +19,11 @@ dados2013 <- read_excel("DadosAlimentadoresCEMIG_XY.xlsx", sheet = 1)
 
 joinDados <- merge(x = dados2013, y = dados2018, by="alimentador", all=TRUE)
 
-##exemplo de utilizacao do .Rcpp
-##Define o endereco do arquivo Cpp
-#setwd("D:\\Documentos\\tcc")
-##Compila o codigo em C++
-#sourceCpp('exemplo.cpp')
-##Inova a funcao compilada
-#timesTwo(42)
-#EDA - Exploratory Data Analysis
+#exemplo de utilizacao do .Rcpp
+#Define o endereco do arquivo Cpp
+setwd("D:\\Programas\\TCC")
+#Compila o codigo em C++
+sourceCpp('exemplo.cpp')
 
 
 list_data <- createData(joinDados)
@@ -38,9 +35,29 @@ excluidas <- data.frame(list_data[2])
 bound <- 1000
 raio <- 1000
 
+#Remove a coluna string (nome das alimentadoras)
+diffCemigDataRcpp <-diffCemigData[,2:5]
+
+
+## DIST.MAT
+# Tempo: 180.54 s
 ti <- proc.time()
-matrizDistancia <- createEuclideanDistance(diffCemigData)
+matrizDistanci1 <- createEuclideanDistance(diffCemigData)
 proc.time() - ti
+
+
+## Rcpp
+# Tempo: 2.25 s
+ti <- proc.time()
+matrizDistancia <- createEuclideanDistance3(diffCemigDataRcpp)
+proc.time() - ti
+
+## Versão usando apenas o R para calculo da dist euclidiana. Esta forma ficou muito lenta
+# porém, conseguimos testar os valores se utilziarmos 5 valores da matrix de pontos
+# teste <-diffCemigData[1:5,]
+#ti <- proc.time()
+#matrizDistancia2 <- createEuclideanDistance2(teste)
+#proc.time() - ti
 
 TestEstatistic <- EstatisticTestElementsCalculator(diffCemigData)
 

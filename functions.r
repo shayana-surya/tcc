@@ -64,8 +64,10 @@ createData <- function(joinDados){
   return (list_data);
 }
 
+################## DIST.MAT ############################
 
 createEuclideanDistance <- function(diffCemigData) {
+  
   matrizDistancia <- dist.mat(diffCemigData,"ID","y","x",diffCemigData,"ID","y","x")
   matrizDistancia$from <- as.numeric(as.character(matrizDistancia$from))
   matrizDistancia$to <- as.numeric(as.character(matrizDistancia$to))
@@ -74,6 +76,66 @@ createEuclideanDistance <- function(diffCemigData) {
   
   return (matrizDistancia)
 }
+####################################################
+
+################## Rcpp ############################
+createEuclideanDistance3 <- function(diffCemigData) {
+  
+  n = nrow(diffCemigData) * nrow(diffCemigData)
+  
+  matrizDistancia <- data.frame(matrix(NA, nrow = n, ncol = 4))
+  names(matrizDistancia)[1] <- "from"
+  names(matrizDistancia)[2] <- "to"
+  names(matrizDistancia)[3] <- "ignore"
+  names(matrizDistancia)[4] <- "distance"
+  
+  matrizDistancia <- createEuclideanDistanceRcpp(as.matrix(matrizDistancia),as.matrix(diffCemigData),nrow(diffCemigData))
+  matrizDistancia <- as.data.frame(matrizDistancia)
+  matrizDistancia <- matrizDistancia[order( matrizDistancia$from,matrizDistancia$distance),]
+  return (matrizDistancia)
+}
+####################################################
+
+
+################## Teste ############################
+createEuclideanDistance2 <- function(diffCemigData) {
+  
+  #matrizDistancia <- data.table(
+  #                            from = numeric(),
+  #                            to = numeric(),
+  #                            ignore = numeric(),
+  #                            distance = numeric())
+  n = nrow(diffCemigData) * nrow(diffCemigData)
+  
+  matrizDistancia <- data.frame(matrix(NA, nrow = n, ncol = 4))
+  names(matrizDistancia)[1] <- "from"
+  names(matrizDistancia)[2] <- "to"
+  names(matrizDistancia)[3] <- "ignore"
+  names(matrizDistancia)[4] <- "distance"
+  
+  x = 1
+  
+  
+  for(from in 1:nrow(diffCemigData)){
+    for(to in 1:nrow(diffCemigData)){
+      dist <- sqrt((diffCemigData$x[to]-diffCemigData$x[from])^2+(diffCemigData$y[to]-diffCemigData$y[from])^2)
+      matrizDistancia[x, ] = data.frame(
+                            from = diffCemigData$ID[from],
+                            to = diffCemigData$ID[to],
+                            ignore = 0,
+                            distance = dist)
+                          
+      x = x + 1
+    }
+  }
+  
+  matrizDistancia <- matrizDistancia[order( matrizDistancia$from,matrizDistancia$distance),]
+  return (matrizDistancia)
+}
+####################################################
+
+
+
 
 EstatisticTestElementsCalculator <- function(diffCemigData) {
   TestEstatistic <- data.frame(N = nrow(diffCemigData), #Equivale ao total geral de observacoes

@@ -6,10 +6,20 @@ NumericVector timesTwo(NumericVector x) {
   return x * 2;
 }
 
-NumericMatrix createEuclideanDistance(NumericMatrix CemigData) {
+NumericMatrix createEuclideanDistance(NumericMatrixmatrizDistancia,NumericMatrix CemigData, n) {
   
   Distancematrix <- dist.mat(diffCemigData,"alimentador","y","x",diffCemigData,"alimentador","y","x", unit = "km")
   Distancematrix <- matrizDistancia[order(matrizDistancia$from,matrizDistancia$distance),]
+  x = 1
+  for (int i=1; i < n; ++i) {
+    for (int j=1; j < n; ++j) {
+      matrizDistancia(x,1) = CemigData(i,5)
+      matrizDistancia(x,2) = CemigData(j,5)
+      matrizDistancia(x,3) = 0
+      matrizDistancia(x,4) = CalculateDistance(CemigData(i,2),CemigData(i,3),CemigData(j,2),CemigData(j,3))
+       ++x
+    }
+  }
   
   return (matrizDistancia);
 }
