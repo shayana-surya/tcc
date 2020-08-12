@@ -74,25 +74,24 @@ print(length(clustersRaio))
 
 
 ########################### UTILIZA K #############################
-#
-##para k = 30 levamos 155,88 segundos
-##com a remocao do segundo for e inclusao do rbind para alimentar resultados, o tempo caiu para 115,22 segundos
-##para k igual a 250 levou-se 125,68 segundos
-#ti <- proc.time()
-#clusters <- geradorCluster(TestEstatistic, matrizDistancia, diffCemigData, k)
-#proc.time() - ti
-#
-##200 simulacoes com k=10 levaram 28.694,02 segundos. Quase 8hrs
-## 66,77 segundos para uma simulacao de 100 iteracoes com k igual a 30. Isso apos as alteracoes
-## 1000 simulações para k igual a 250 levou 3.601,34 segundos ou 1hr
-#ti <- proc.time()
-#resultSimul <- monteCarloSimu(TestEstatistic, diffCemigData, clusters, k, bound)
-#proc.time() - ti
-#
-#ti <- proc.time()
-#significativos <- clustersSignificativos(resultSimul,clusters,k)
-#proc.time() - ti
-#
-#histMatrixSimul <- hist(resultSimul)
-#
-#
+
+#para k = 30 levamos 155,88 segundos
+#com a remocao do segundo for e inclusao do rbind para alimentar resultados, o tempo caiu para 115,22 segundos
+#para k igual a 250 levou-se 125,68 segundos
+ti <- proc.time()
+clusters <- geradorCluster(TestEstatistic, matrizDistancia, diffCemigData, k)
+proc.time() - ti
+
+#200 simulacoes com k=10 levaram 28.694,02 segundos. Quase 8hrs
+# 66,77 segundos para uma simulacao de 100 iteracoes com k igual a 30. Isso apos as alteracoes
+# 1000 simulações para k igual a 250 levou 3.601,34 segundos ou 1hr
+ti <- proc.time()
+resultSimul <- monteCarloSimu(TestEstatistic, diffCemigData, clusters, k, bound)
+proc.time() - ti
+
+ti <- proc.time()
+significativos <- clustersSignificativos(resultSimul,clusters,k)
+proc.time() - ti
+
+histMatrixSimul <- hist(resultSimul)
+

@@ -108,32 +108,38 @@ createIndexMatrix <- function(matrizDistancia) {
 
 ######################### CALCULO POR QUANTIDADE K DE CLUSTERS  #####################################
 
-geradorCluster <- function( matrizDistancia, dados, k){
+geradorCluster <- function(IndexMatrix, dados, k){
   resultados <- data.frame()
   N = nrow(dados)
-  X = sum(dados[,4])
-  Qgeral =sum(dados[,4]^2)
   
-  for (i in 1:nrow(dados)) {
+  for (i in 1:N) {
     estatistica <- 0
     sigma2z <- 0
     somatorio <- 0 #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
     Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
-    df_aux <- matrizDistancia[matrizDistancia$from == i,]
-
-    pos <- df_aux[1:k, 2]
-    somatorio <- sum(dados[pos,4]^2)
-    Xz <- sum(dados[pos,4])
+    
+    #df_aux <- matrizDistancia[matrizDistancia$from == i,]
+    #pos <- df_aux[1:k, 2]
+    
+    pos <- IndexMatrix[i,] #Pego toda a linha da matriz de distancia ID
+    x.in  <- dados[pos[1:k],4]
+    x.out <- dados[pos[(k+1):N],4]
+    
+    somatorioIn <- sum(x.in^2)
+    somatorioOut <- sum(x.out^2)
+    Xz <- sum(x.in)
+    X <- sum(x.out)
     
     Nz <- k
     miz <- Xz/Nz
     lambdaz <- (X - Xz)/(N - Nz)
-    sigma2z <- (1/N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (Qgeral - somatorio) - 2*(X - Xz)*lambdaz + (N - Nz)*(lambdaz^2))
+    sigma2z <- (1/N) * (somatorioIn - 2*Xz*miz + Nz*(miz^2) + (somatorioOut - somatorioIn) - 2*(X - Xz)*lambdaz + (N - Nz)*(lambdaz^2))
     estatistica <- (- N*log(sqrt(sigma2z)))
     
-    pos[k+1] <- estatistica
-    resultados <- rbind(resultados,pos)
-  
+    relacao <- pos[1:k]
+    relacao[k+1] <- estatistica
+    resultados <- rbind(resultados,relacao)
+    
   }
   
   resultados <- resultados[order(resultados[k+1],decreasing = TRUE),]
@@ -142,26 +148,29 @@ geradorCluster <- function( matrizDistancia, dados, k){
   
 }
 
-geradorClusterSimul <- function(dados,clusters,k){
+geradorClusterSimul <- function(IndexMatrix,dados,clusters,k){
   
   N = nrow(dados)
-  X = sum(dados[,4])
-  Qgeral =sum(dados[,4]^2)
   
-  for (i in 1:nrow(clusters)) {
+  for (i in 1:N) {
     estatistica <- 0
     sigma2z <- 0
     somatorio <- 0 #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
     Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
     
-    pos <- as.numeric(clusters[i,1:k])
-    somatorio <- sum(dados[pos,4]^2)
-    Xz <- sum(dados[pos,4])
+    pos <- IndexMatrix[i,] #Pego toda a linha da matriz de distancia ID
+    x.in  <- dados[pos[1:k],4]
+    x.out <- dados[pos[(k+1):N],4]
+    
+    somatorioIn <- sum(x.in^2)
+    somatorioOut <- sum(x.out^2)
+    Xz <- sum(x.in)
+    X <- sum(x.out)
     
     Nz <- k
     miz <- Xz/Nz
     lambdaz <- (X - Xz)/(N - Nz)
-    sigma2z <- (1/N) * (somatorio - 2*Xz*miz + Nz*(miz^2) + (Qgeral - somatorio) - 2*(X - Xz)*lambdaz + (N - Nz)*(lambdaz^2))
+    sigma2z <- (1/N) * (somatorioIn - 2*Xz*miz + Nz*(miz^2) + (somatorioOut - somatorioIn) - 2*(X - Xz)*lambdaz + (N - Nz)*(lambdaz^2))
     estatistica <- (- N*log(sqrt(sigma2z)))
     
     clusters[i,k+1] <- estatistica
@@ -173,23 +182,23 @@ geradorClusterSimul <- function(dados,clusters,k){
   return(clusters[1,k+1])
   
 }
-  
 
-monteCarloSimu <- function(diffCemigData, clusters, k, bound){
+
+monteCarloSimu <- function(IndexMatrix,diffCemigData, clusters, k, bound){
   
   resultSimul <- vector()
   
   for (m in 1:bound) {
     baseRandom <- diffCemigData
     baseRandom[,4] <- sample(diffCemigData$difConsumo) #randomizando a coluna diferenca de consumo
-    resultSimul[m] <- geradorClusterSimul(baseRandom, clusters, k)
+    resultSimul[m] <- geradorClusterSimul(IndexMatrix, baseRandom, clusters, k)
   }
   return (resultSimul)
 }
 
 
 clustersSignificativos <- function(resultSimul,clusters,k){
-
+  
   alpha <- 0.05
   resultSimul <- resultSimul[order(resultSimul,decreasing = TRUE)] #ordenando ele do maior para o menor
   significativos <- vector()
@@ -205,9 +214,18 @@ clustersSignificativos <- function(resultSimul,clusters,k){
     }
     else{
       #se eu cair aqui, entendo que nao vai ter mais nenhum significativo
-      break()
+      return(significativos)
     }
   }
+  return(significativos)
+}
+
+histograma <- function(resultsimul,significativos){
+  
+  hist(resultSimul, xlim=c(min(c(resultSimul,significativos)), max(c(resultSimul,significativos))), col="light blue") 
+  rug(resultSimul)
+  abline(v=significativos, lwd=2, lty=2, col="red")
+  
 }
 
 ######################### CALCULO POR RAIO #####################################
