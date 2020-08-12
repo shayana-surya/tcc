@@ -93,7 +93,7 @@ createEuclideanDistanceUsingRcpp <- function(diffCemigData) {
 ####################################################
 
 
-################## Matriz de Indice ############################
+################## Matriz de Indice #################
 createIndexMatrix <- function(matrizDistancia) {
   #obs: A função order não retorna o vetor original ordenado, mas retorna um vetor com as posições para que x fique em ordem crescente.
   
@@ -103,16 +103,16 @@ createIndexMatrix <- function(matrizDistancia) {
   }
   return (matIDX)
 }
-####################################################
+#####################################################
 
 
 ######################### CALCULO POR QUANTIDADE K DE CLUSTERS  #####################################
 
 geradorCluster <- function( matrizDistancia, dados, k){
   resultados <- data.frame()
-  N = nrow(diffCemigData)
-  X = sum(diffCemigData[,4])
-  Qgeral =sum(diffCemigData[,4]^2)
+  N = nrow(dados)
+  X = sum(dados[,4])
+  Qgeral =sum(dados[,4]^2)
   
   for (i in 1:nrow(dados)) {
     estatistica <- 0
@@ -144,9 +144,9 @@ geradorCluster <- function( matrizDistancia, dados, k){
 
 geradorClusterSimul <- function(dados,clusters,k){
   
-  N = nrow(diffCemigData)
-  X = sum(diffCemigData[,4])
-  Qgeral =sum(diffCemigData[,4]^2)
+  N = nrow(dados)
+  X = sum(dados[,4])
+  Qgeral =sum(dados[,4]^2)
   
   for (i in 1:nrow(clusters)) {
     estatistica <- 0
@@ -217,6 +217,9 @@ geradorClusterPorRaio <- function(matrizDistancia,diffCemigData,raio){
   
   N = nrow(diffCemigData)
   X = sum(diffCemigData$difConsumo)
+  bestResult <- 0
+  estatisticaAux <- 0
+  position <- 0
     
   resultados <- list()
   
@@ -230,12 +233,17 @@ geradorClusterPorRaio <- function(matrizDistancia,diffCemigData,raio){
     
     sigma2z <- sum( (x.in - mean(x.in))^2 ) + sum( (x.out - mean(x.out))^2 )
     sigma2z <- sigma2z/N
-    estatistica <- (- N*log(sqrt(sigma2z)))
+    estatistica <- (-N*log(sigma2z)/2)
 
     j <- sum(pos)
     resultadosParciais[j + 1] <- estatistica
     resultados[[i]] <- resultadosParciais
     
+    if(bestResult == 0 || estatistica > bestResult){
+      bestResult <- estatisticaAux
+      position <- i
+    }
+    resultados[[i+1]] <- c(position,bestResult)
   }
     return(resultados)
 }
@@ -254,13 +262,10 @@ monteCarloSimuRaio <- function(diffCemigData,clustersRaio,raio,bound){
 
 geradorClusterRaioSimul <- function(baseRandom,clustersRaio,raio){
   
-  #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
-  # Xz Somatorio da variavel diferenca de consumo dentro do 
-  # a diferença de consumo é alterada mas não a distancia 
   bestResult <- 0
   estatisticaAux <- 0
-  N = nrow(diffCemigData)
-  X = sum(diffCemigData$difConsumo)
+  N = nrow(baseRandom)
+  X = sum(baseRandom$difConsumo)
 
   for (i in 1:nrow(baseRandom)) {
     j <- length(clustersRaio[[i]]) - 1 # numero de elemento no cluster menos a estatistica de teste que esta salva na ultima casa
@@ -273,7 +278,7 @@ geradorClusterRaioSimul <- function(baseRandom,clustersRaio,raio){
     sigma2z <- sum( (x.in - mean(x.in))^2 ) + sum( (x.out - mean(x.out))^2 )
     sigma2z <- sigma2z/N
     
-    estatisticaAux <- (- N*log(sqrt(sigma2z)))
+    estatisticaAux <- (-N*log(sigma2z)/2)
     
     if(bestResult == 0 || estatisticaAux > bestResult){
       bestResult <- estatisticaAux
@@ -284,25 +289,20 @@ geradorClusterRaioSimul <- function(baseRandom,clustersRaio,raio){
 
 # ctrl + shift + c
 
-clustersSignificativosRaio <- function(resultSimul,clusters,raio){
-  BestIDX <- which.max(dados$LLK)
-  BestLLK <- max(dados$LLK)
+clustersSignificativosRaio <- function(resultSimul,clustersRaio,raio){
 
   alpha <- 0.05
   resultSimul <- sort(resultSimul,decreasing = TRUE) #ordenando ele do maior para o menor
-  significativos <- vector()
+  significativosRaio <- vector()
 
   #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
-  for(i in 1:nrow(clusters)){
-    pvalor <- (sum(vec.LLK > BestLLK) + 1)/(nsim + 1)
-    pvalor <- sum(resultSimul > clusters[i,k+1])/(length(resultSimul)+1)
+  for(i in 1:length(clustersRaio)){
+    pos <- length(clustersRaio[[i]])
+    pvalor <- (sum(resultSimul > clustersRaio[[i]][pos]) + 1)/(length(resultSimul)+1)
 
     if(pvalor < alpha){
-      significativos[length(significativos)+1] <- clusters[i,1] #salvando o centroide daquele cluster
-    }
-    else{
-      #se eu cair aqui, entendo que nao vai ter mais nenhum significativo
-      break()
+      significativosRaio <- append(significativosRaio,i) #salvando o centroide daquele cluster
     }
   }
+  return (significativosRaio)
 }

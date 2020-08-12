@@ -11,7 +11,7 @@ library(Rcpp)
 library(rlist)
 source(file="functions.r")
 #Define o endereco do arquivo Cpp
-setwd("D:\\Programas\\TCC")
+#setwd("D:\\Programas\\TCC")
 sourceCpp('exemplo.cpp')
 
 
@@ -26,7 +26,7 @@ relacaoAlimentadorId <- data.frame(list_data[3])
 
 
 bound <- 1000
-raio <- 26101
+raio <- 200000
 k <- 250
 
 
@@ -56,19 +56,21 @@ ti <- proc.time()
 clustersRaio <- geradorClusterPorRaio(matrizDistancia,diffCemigData,raio)
 proc.time() - ti
 
-length(clustersRaio[[2]])
-
-# Tempo: 41,92 S
+# Raio = 200 km e 1000 Sim
+# Tempo: 165,50 S
 ti <- proc.time()
 resultSimulRaio <- monteCarloSimuRaio(diffCemigData, clustersRaio, raio, bound)
 proc.time() - ti
+print(length(clustersRaio))
 
+# Tempo: 0,11 S
  ti <- proc.time()
  significativosRaio <- clustersSignificativosRaio(resultSimulRaio,clustersRaio,raio)
  proc.time() - ti
+ 
+ print(significativosRaio)
 
 #histMatrixSimul <- hist(resultSimulRaio)
-
 
 
 ########################### UTILIZA K #############################
