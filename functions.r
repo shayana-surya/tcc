@@ -1,245 +1,156 @@
 
-createData <- function(joinDados){
+createData <- function(joinData){
   
   relacaoAlimentadorId <- data.table(ID = numeric(),
-                                     alimentadora = character()
+                                     alimentadora = character(),
+                                     lat = numeric(),
+                                     lon = numeric()
+                                     
   )
   
   diffCemigData <- data.table(alimentadora = character(),
                               ID = numeric(),
                               x = numeric(),
                               y = numeric(),
-                              difConsumo = numeric()
+                              difConsumo = numeric(),
+                              lat = numeric(),
+                              lon = numeric()
   )
   
-  excluidas <- data.table(alimentadora = character(),
+  excluded <- data.table(alimentadora = character(),
                           dados2013.x = numeric(),
                           dados2013.y = numeric(),
+                          dados2013.lat = numeric(),
+                          dados2013.lon = numeric(),
                           dados2018.x = numeric(),
                           dados2018.y = numeric(),
+                          dados2018.lat = numeric(),
+                          dados2018.lon = numeric(),
                           dados2013.consumo = numeric(),
                           dados2018.consumo = numeric()
   )
   
-  for (i in 1:nrow(joinDados))
+  for (i in 1:nrow(joinData))
   {
     if(
-      (!is.na(joinDados$ConsumoMedido.x[i]) || !is.na(joinDados$ConsumoMedido.y[i])) &&
-      (!is.na(joinDados$x.x[i]) || !is.na(joinDados$x.y[i])) && 
-      (!is.na(joinDados$y.x[i]) || !is.na(joinDados$y.y[i])))
+      (!is.na(joinData$ConsumoMedido.2013[i]) || !is.na(joinData$ConsumoMedido.2018[i])) &&
+      (!is.na(joinData$x.2013[i]) || !is.na(joinData$x.2018[i])) && 
+      (!is.na(joinData$y.2013[i]) || !is.na(joinData$y.2018[i])))
     {
-      joinDados$ConsumoMedido.x[i] <- replace(x = joinDados$ConsumoMedido.x[i], list = is.na(joinDados$ConsumoMedido.x[i]), values = 0)
-      joinDados$ConsumoMedido.y[i] <- replace(x = joinDados$ConsumoMedido.y[i], list = is.na(joinDados$ConsumoMedido.y[i]), values = 0)
       
-      if(!is.na(joinDados$x.x[i]) && !is.na(joinDados$y.x[i]))
+      if (is.na(joinData$ConsumoMedido.2013[i]))
+        joinData$ConsumoMedido.2013[i] <- 0
+      if (is.na(joinData$ConsumoMedido.2018[i]))
+        joinData$ConsumoMedido.2018[i] <- 0
+      
+      if(!is.na(joinData$x.2013[i]) && !is.na(joinData$y.2013[i]))
       {
-        validX = joinDados$x.x[i]
-        validY = joinDados$y.x[i]
+        validX = joinData$x.2013[i]
+        validY = joinData$y.2013[i]
+        validLat = joinData$lat.2013[i]
+        validLon = joinData$lon.2013[i]
         
       }
-      else
+      else if (!is.na(joinData$x.2018[i]) && !is.na(joinData$y.2018[i]))
       {
-        validX = joinDados$x.y[i]
-        validY = joinDados$y.y[i]
-        
+        validX = joinData$x.2018[i]
+        validY = joinData$y.2018[i]
+        validLat = joinData$lat.2018[i]
+        validLon = joinData$lon.2018[i]
       }
       diffCemigData <- rbind(diffCemigData, data.frame(
         ID = i,
-        alimentadora = joinDados$alimentador[i],
+        alimentadora = joinData$alimentador[i],
         x = validX,
         y = validY,
-        difConsumo = joinDados$ConsumoMedido.y[i] - joinDados$ConsumoMedido.x[i]
+        difConsumo = joinData$ConsumoMedido.2018[i] - joinData$ConsumoMedido.2013[i],
+        lat = validLat,
+        lon = validLon
         
       ))
     }
     else
     {
-      excluidas <- rbind(excluidas, data.frame(
-        alimentadora = joinDados$alimentador[i],
-        dados2013.x = joinDados$x.x[i],
-        dados2013.y = joinDados$y.x[i],
-        dados2018.x = joinDados$x.y[i],
-        dados2018.y = joinDados$y.y[i],
-        dados2013.consumo = joinDados$ConsumoMedido.x[i],
-        dados2018.consumo = joinDados$ConsumoMedido.y[i]
+      excluded <- rbind(excluded, data.frame(
+        alimentadora = joinData$alimentador[i],
+        dados2013.x = joinData$x.2013[i],
+        dados2013.y = joinData$y.2013[i],
+        dados2013.lat = joinData$lat.2013[i],
+        dados2013.lon = joinData$lon.2013[i],
+        dados2018.x = joinData$x.2018[i],
+        dados2018.y = joinData$y.2018[i],
+        dados2018.lat = joinData$lat.2018[i],
+        dados2018.lon = joinData$lon.2018[i],
+        dados2013.consumo = joinData$ConsumoMedido.2013[i],
+        dados2018.consumo = joinData$ConsumoMedido.2018[i]
       ),fill=TRUE)
     }
   }
   
-  relacaoAlimentadorId <-diffCemigData[,c("ID","alimentadora")]
+  relacaoAlimentadorId <-diffCemigData[,c("ID","alimentadora","lat","lon")]
   diffCemigData <- diffCemigData[,2:5]
-  list_data <- list(diffCemigData,excluidas,relacaoAlimentadorId)
+  list_data <- list(diffCemigData,excluded,relacaoAlimentadorId)
   return (list_data);
 }
 
-################## DIST ###########################
+########################### ALGORITMOS EM RCPP ###########################
 
-createEuclideanDistance <- function(diffCemigData) {
-  
-  matrizDistancia <- as.matrix( dist(diffCemigData[,c("x","y")], method = "euclidean"))
-
-  return (matrizDistancia)
-}
-####################################################
-
-
-################## Rcpp ############################
 createEuclideanDistanceUsingRcpp <- function(diffCemigData) {
   
-  matrizDistancia <- createEuclideanDistanceRcpp(as.matrix(diffCemigData),nrow(diffCemigData))
-
-  return (matrizDistancia)
-}
-####################################################
-
-
-################## Matriz de Indice #################
-createIndexMatrix <- function(matrizDistancia) {
-  #obs: A função order não retorna o vetor original ordenado, mas retorna um vetor com as posições para que x fique em ordem crescente.
+  distanceMatrix <- createEuclideanDistanceRcpp(as.matrix(diffCemigData),nrow(diffCemigData))
   
-  matIDX <- matrix(NA, nrow(matrizDistancia), ncol(matrizDistancia))
-  for(idx in 1:nrow(matrizDistancia)){
-    matIDX[idx,] <- order(matrizDistancia[idx,], decreasing=FALSE)
-  }
-  return (matIDX)
-}
-#####################################################
-
-
-######################### CALCULO POR QUANTIDADE K DE CLUSTERS  #####################################
-
-geradorCluster <- function(IndexMatrix, dados, k){
-  resultados <- data.frame()
-  N = nrow(dados)
-  
-  for (i in 1:N) {
-    #estatistica <- 0
-    #sigma2z <- 0
-    #somatorio <- 0 #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
-    #Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
-    
-    #df_aux <- matrizDistancia[matrizDistancia$from == i,]
-    #pos <- df_aux[1:k, 2]
-    
-    pos <- IndexMatrix[i,] #Pego toda a linha da matriz de distancia ID
-    x.in  <- dados[pos[1:k],4]
-    x.out <- dados[pos[(k+1):N],4]
-    
-    # somatorioIn <- sum(x.in^2)
-    # somatorioOut <- sum(x.out^2)
-    # Xz <- sum(x.in)
-    # X <- sum(dados[,4])
-    #Nz <- k
-    #miz <- Xz/Nz
-    #lambdaz <- (X - Xz)/(N - Nz)
-    #sigma2z <- (1/N)  * (somatorioIn - 2*Xz*miz + Nz*(miz^2) + (somatorioOut - 2*(X - Xz)*lambdaz + (N - Nz)*(lambdaz^2)))
-    
-    sigma2z <- sum((x.in-mean(x.in))^2) + sum((x.out-mean(x.out))^2)
-    sigma2z <- sigma2z/N
-    estatistica <- (- N*log(sqrt(sigma2z)))
-    
-    relacao <- pos[1:k]
-    relacao[k+1] <- estatistica
-    resultados <- rbind(resultados,relacao)
-    
-  }
-  
-  resultados <- resultados[order(resultados[k+1],decreasing = TRUE),]
-  
-  return(resultados)
-  
-}
-
-geradorClusterSimul <- function(IndexMatrix,dados,clusters,k){
-  
-  N = nrow(dados)
-  
-  for (i in 1:N) {
-    estatistica <- 0
-    sigma2z <- 0
-    somatorio <- 0 #Somatorio do quadrado da variavel diferenca de consumo dentro do cluster
-    Xz <- 0 #Somatorio da variavel diferenca de consumo dentro do cluster
-    
-    pos <- IndexMatrix[i,] #Pego toda a linha da matriz de distancia ID
-   
-    x.in  <- dados[pos[1:k],4]
-    x.out <- dados[pos[(k+1):N],4]
-    
-    # somatorioIn <- sum(x.in^2)
-    # somatorioOut <- sum(x.out^2)
-    # Xz <- sum(x.in)
-    # X <- sum(dados[,4])
-    #Nz <- k
-    #miz <- Xz/Nz
-    #lambdaz <- (X - Xz)/(N - Nz)
-    #sigma2z <- (1/N)  * (somatorioIn - 2*Xz*miz + Nz*(miz^2) + (somatorioOut - 2*(X - Xz)*lambdaz + (N - Nz)*(lambdaz^2)))
-    
-    sigma2z <- sum((x.in-mean(x.in))^2) + sum((x.out-mean(x.out))^2)
-    sigma2z <- sigma2z/N
-
-    estatistica <- (- N*log(sqrt(sigma2z)))
-    
-    clusters[i,k+1] <- estatistica
-  }
-  clusters <- clusters[order(clusters[k+1],decreasing = TRUE),]
-    return(clusters[1,k+1])
-  
+  return (distanceMatrix)
 }
 
 
-monteCarloSimu <- function(IndexMatrix,diffCemigData, clusters, k, bound){
+MonteCarloRcpp <- function(matrizDistancia,diffCemigData,raio,bound){
   
   resultSimul <- vector()
+  dados <- diffCemigData
+  N <- nrow(diffCemigData)
   
   for (m in 1:bound) {
-    baseRandom <- diffCemigData
-    baseRandom[,4] <- sample(diffCemigData$difConsumo) #randomizando a coluna diferenca de consumo
-    resultSimul[m] <- geradorClusterSimul(IndexMatrix, baseRandom, clusters, k)
+    dados$difConsumo <- sample(diffCemigData$difConsumo,nrow(diffCemigData)) 
+    resultSimul[m] <- SimulClustersRcpp(as.matrix(matrizDistancia),as.matrix(dados),N,raio)
   }
   return (resultSimul)
 }
 
-
-clustersSignificativos <- function(resultSimul,clusters,k){
-  
+clustersSignificativosRaioRcpp <- function(resultSimul,clustersRaioRcpp){
   alpha <- 0.05
-  resultSimul <- resultSimul[order(resultSimul,decreasing = TRUE)] #ordenando ele do maior para o menor
-  significativos <- vector()
-  
-  
+  significativosRaio <- vector()
+  nsim = length(resultSimul)
   #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
-  for(i in 1:nrow(clusters)){
-    pvalor <- (sum(resultSimul > clusters[i,k+1]))/(length(resultSimul)+1)
+  for(i in 1:nrow(clustersRaioRcpp)){
     
+    EstTeste <- clustersRaioRcpp[i,3]
+    pvalor <- (sum(resultSimul > EstTeste))/(nsim + 1)
     if(pvalor < alpha){
-      significativos[length(significativos)+1] <- clusters[i,1] #salvando o centroide daquele cluster
-    }
-    else{
-      #se eu cair aqui, entendo que nao vai ter mais nenhum significativo
-      return(significativos)
+      #salvando o centroide daquele cluster   
+      significativosRaio <- append(significativosRaio,i)
     }
   }
-  return(significativos)
+  return (significativosRaio)
 }
 
-histograma <- function(resultsimul,significativos){
+
+########################### ALGORITMOS EM R #############################
+
+createEuclideanDistance <- function(diffCemigData) {
   
-  hist(resultSimul, xlim=c(min(c(resultSimul,significativos)), max(c(resultSimul,significativos))), col="light blue") 
-  rug(resultSimul)
-  abline(v=significativos, lwd=2, lty=2, col="red")
+  distanceMatrix <- as.matrix( dist(diffCemigData[,c("x","y")], method = "euclidean"))
+
+  return (distanceMatrix)
 }
 
-######################### CALCULO POR RAIO #####################################
-
-
-geradorClusterPorRaio <- function(matrizDistancia,diffCemigData,raio){
+clusterGeneratorRadius <- function(distanceMatrix,diffCemigData,Radius){
   
   N = nrow(diffCemigData)
     
   resultados <- list()
   
   for (i in 1:nrow(diffCemigData)){
-    pos <- (matrizDistancia[i, ] < raio)
+    pos <- (distanceMatrix[i, ] < Radius)
     # alimentadoras mais prox
     resultadosParciais <- which(pos == TRUE) 
     
@@ -261,68 +172,209 @@ geradorClusterPorRaio <- function(matrizDistancia,diffCemigData,raio){
     return(resultados)
 }
  
-monteCarloSimuRaio <- function(diffCemigData,clustersRaio,raio,bound){
+monteCarloSimuRadius <- function(diffCemigData,radiusClusters,radius,bound){
   
+  N = nrow(diffCemigData)
   resultSimul <- vector()
   
   for (m in 1:bound) {
-    consumo <- sample(diffCemigData$difConsumo) 
-    resultSimul[m] <- geradorClusterRaioSimul(consumo,clustersRaio,raio)
-    break
+    consumo <- sample(diffCemigData$difConsumo, N) 
+    resultSimul[m] <- clusterGeneratorRadiusSimul(consumo,radiusClusters,radius)
   }
   return (resultSimul)
 }
 
-geradorClusterRaioSimul <- function(consumo,clustersRaio,raio){
+clusterGeneratorRadiusSimul <- function(consumo,radiusClusters,radius){
   
-  bestResult <- 0
-  estatisticaAux <- 0
   N = length(consumo)
+  estatisticaAux <- rep(NA, N)
 
   for (i in 1:N) {
     
     # numero de elemento no cluster menos a estatistica de teste que esta salva na ultima casa
-    j <- length(clustersRaio[[i]]) - 1 
+    j <- length(radiusClusters[[i]]) - 1 
     
     # ID das alimentadoras do cluster
-    alimentadorasCluster <- clustersRaio[[i]][1:j]
+    alimentadorasCluster <- radiusClusters[[i]][1:j]
     
-    pos <- (rep(FALSE,N))
+    pos <- rep(FALSE,N)
     pos[alimentadorasCluster] <- TRUE
-    View(pos)
-    break
+    
     x.in  <- consumo[pos]
     x.out <- consumo[!pos]
     miz <- mean(x.in)
     lambdaz <- mean(x.out)
-    
-    sigma2z <- sum( (x.in - miz)^2 ) + sum( (x.out - lambdaz)^2 )
+    sigma2z <- sum((x.in - miz)^2 ) + sum( (x.out - lambdaz)^2)
     sigma2z <- sigma2z/N
     
-    estatisticaAux <- -N*log(sigma2z)/2
+    estatisticaAux[i] <- -N*log(sigma2z)/2
     
-    if(bestResult == 0 || estatisticaAux > bestResult){
-      bestResult <- estatisticaAux
-    }
   }
-  return(bestResult)
+  return(max(estatisticaAux))
 }
 
-clustersSignificativosRaio <- function(resultSimul,clustersRaio,raio){
-  alpha <- 0.05
-  #resultSimul <- sort(resultSimul,decreasing = TRUE)
-  significativosRaio <- vector()
+significantRadiusClusters <- function(resultSimul,radiusClusters,alpha){
+  teste <- 1
+  significativosRadius <- vector()
   nsim = length(resultSimul)
   #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
-  for(i in 1:length(clustersRaio)){
+  for(i in 1:length(radiusClusters)){
     
-    pos <- clustersRaio[[i]]
+    pos <- radiusClusters[[i]]
     EstTeste <- pos[length(pos)]
-    pvalor <- (sum(resultSimul > EstTeste))/(nsim + 1)
+    
+    pvalor <- sum(resultSimul > EstTeste)/(nsim + 1)
     if(pvalor < alpha){
       #salvando o centroide daquele cluster   
-      significativosRaio <- append(significativosRaio,i)
+      significativosRadius <- append(significativosRadius,i)
+    }
+    #if (pvalor < teste){
+    #  teste <- pvalor
+    #}
+  }
+  #print(teste)
+  return (significativosRadius)
+}
+
+
+################# SHINY #####################################
+
+showHist <- function(dataNum,dados2013,dados2018,diffCemigData)
+{
+  if (dataNum == 1)
+  {
+    option = dados2013$ConsumoMedido
+    data = dados2013
+    min = 0
+    max = 77000000
+    
+  }
+    
+  else if (dataNum == 2)
+  {
+    option = dados2018$ConsumoMedido
+    data = dados2018
+    min = 0
+    max = 82000000
+  }
+  else if (dataNum == 3)
+  {
+    option = diffCemigData$difConsumo
+    data = diffCemigData
+    min = -50000000
+    max = 50000000
+  }
+  else
+  {
+    return()
+  }
+    
+  
+  step = 20000000
+  print(ggplot(data, aes(x = option)) +
+      geom_histogram(color = "white", fill = "lightblue") +
+      theme_classic(base_size = 18) +
+      scale_x_continuous(breaks = seq(from = min,to = max,by = step), limits = c(min,max)) +
+      xlab("Consumo Energetico (KWh)") + 
+      ylab("Frequencia"))
+  
+}
+
+showMapInfo <- function(dataNum,dados2013,dados2018,list_data)
+{
+  if (dataNum == 1)
+    option = dados2013[,1:3]
+  else if (dataNum == 2)
+    option = dados2018[,1:3]
+  else if (dataNum == 3)
+    option = data.frame(list_data[3])[,2:4]
+  else
+    option = optionExcluded(data.frame(list_data[2]))
+    
+  shp <- readOGR("Mapa\\.","MG_UF_2019", stringsAsFactors=FALSE, encoding="UTF-8")
+  pal <- colorBin("Blues",domain = NULL,n=5) #cores do mapa
+  
+  leaflet(data = shp) %>%
+    addProviderTiles("CartoDB.Positron") %>%
+    addPolygons(fillColor = ~pal(1), 
+                fillOpacity = 0.8, 
+                color = "#BDBDC3", 
+                weight = 1)%>%
+    addMarkers(lng = option$lon,lat= option$lat, clusterOptions = markerClusterOptions())
+}
+
+showSummary <- function(dataNum,dados2013,dados2018,diffCemigData)
+{
+  if (dataNum == 1)
+    return(summary(dados2013$ConsumoMedido))
+  else if (dataNum == 2)
+    return(summary(dados2018$ConsumoMedido))
+  else if (dataNum == 3)
+    return(summary(diffCemigData$difConsumo))
+  else
+    return()
+  
+  
+}
+
+optionExcluded <- function(data)
+{
+  response <- data.table(alimentadora = character(),
+                         lat = numeric(),
+                         lon = numeric()
+                         
+  )
+  for (i in 1:nrow(data))
+  {
+    if(!is.na(data$dados2013.lat[i]) && !is.na(data$dados2013.lon[i]))
+    {
+      response <- rbind(response, data.frame(
+        alimentadora = data$alimentadora[i],
+        lat = data$dados2013.lat[i],
+        lon = data$dados2013.lon[i]))
+    }
+    else if(!is.na(data$dados2018.lat[i]) && !is.na(data$dados2018.lon[i]))
+    {
+      response <- rbind(response, data.frame(
+        alimentadora = data$alimentadora[i],
+        lat = data$dados2018.lat[i],
+        lon = data$dados2018.lon[i]))
     }
   }
-  return (significativosRaio)
+  return (response)
 }
+
+calculator <- function(radius,bound,diffCemigData)
+{
+
+  distanceMatrix <- createEuclideanDistanceUsingRcpp(diffCemigData)
+  IndexMatrix <- createIndexMatrix(distanceMatrix)
+  radiusClusters <- clusterGeneratorRadius(distanceMatrix,diffCemigData,radius)
+  resultSimulRadius <- monteCarloSimuRadius(diffCemigData, radiusClusters, radius, bound)
+  significantRadiusClusters <- significantRadiusClusters(resultSimulRadius,radiusClusters,radius)
+}
+
+showSignificantClustersInfo <- function(significantRadiusClusters,relacaoAlimentadorId)
+{
+  option = data.table(relacaoAlimentadorId[significantRadiusClusters,2:4])
+  
+  shp <- readOGR("Mapa\\.","MG_UF_2019", stringsAsFactors=FALSE, encoding="UTF-8")
+  pal <- colorBin("Blues",domain = NULL,n=5) #cores do mapa
+  
+  
+  leaflet(data = shp) %>%
+    addProviderTiles("CartoDB.Positron") %>%
+    addPolygons(fillColor = ~pal(1), 
+                fillOpacity = 0.6, 
+                color = "#BDBDC3", 
+                weight = 1)%>%
+    addMarkers(lng = option$lon,lat= option$lat, clusterOptions = markerClusterOptions())
+}
+
+histogramaSignificantCluster <- function(resultsimul,significativos){
+  
+  hist(resultSimul, xlim=c(min(c(resultSimul,significativos)), max(c(resultSimul,significativos))), col="light blue") 
+  rug(resultSimul)
+  abline(v=significativos, lwd=2, lty=2, col="red")
+}
+

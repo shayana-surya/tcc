@@ -2,9 +2,10 @@ library(rgdal)
 library(sp)
 library(RColorBrewer)
 library(leaflet)
+source('main.r')
+
 shp <- readOGR("Mapa\\.","MG_UF_2019", stringsAsFactors=FALSE, encoding="UTF-8")
 teste <-  read_excel("Teste.xlsx")
-View(pg)
 
 #pg <- pg %>% group_by(Estado) %>% mutate(cumsum = cumsum(PG))
 #pg <- pg %>%

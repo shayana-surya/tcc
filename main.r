@@ -4,103 +4,87 @@
 ### date: "6 de novembro de 2019"
 ### ---
 
-library(readxl)
-library(data.table)
-library(REAT)
-library(Rcpp)
-library(rlist)
-source(file="functions.r")
-#Define o endereco do arquivo Cpp
-#setwd("D:\\Programas\\TCC")
-sourceCpp('exemplo.cpp')
+require(readxl)
+require(data.table)
+require(REAT)
+require(Rcpp)
+require(rlist)
 
+source(file="functions.r")
+sourceCpp('functionsC++.cpp')
+
+###################### LEITURA E TRATAMENTO DA BASE DE DADOS ###################### 
 
 dados2018 <- read_excel("DadosAlimentadoresCEMIG_XY.xlsx", sheet = 2)
 dados2013 <- read_excel("DadosAlimentadoresCEMIG_XY.xlsx", sheet = 1)
 
-joinDados <- merge(x = dados2013, y = dados2018, by="alimentador", all=TRUE)
-list_data <- createData(joinDados)
+joinData <- merge(x = dados2013, y = dados2018, by="alimentador", all=TRUE)
+names(joinData)<- c("alimentador", "lat.2013", "lon.2013","x.2013", "y.2013","ConsumoMedido.2013",
+                    "lat.2018", "lon.2018","x.2018", "y.2018","ConsumoMedido.2018")	
+
+list_data <- createData(joinData)
 diffCemigData <- data.frame(list_data[1])
-excluidas <- data.frame(list_data[2])
+excluded <- data.frame(list_data[2])
 relacaoAlimentadorId <- data.frame(list_data[3])
 
+###################### PARAMETROS PARA GERACAO DE CLUSTERS###################### 
 
-bound <- 100
-raio <- 35000
-k <- 200
+radius <- 300000
+bound <-1000
+alpha <- 0.05
 
 
-## USANDO DIST
-## Tempo: 0.16 s
+########################### ALGORITMOS EM RCPP ########################### 
+
+## Tempo: 0.04 s
 #ti <- proc.time()
-#matrizDistancia <- createEuclideanDistance(diffCemigData)
+#distanceMatrix_Rcpp <- createEuclideanDistanceUsingRcpp(diffCemigData)
 #proc.time() - ti
 
-### USANDO Rcpp
-## Tempo: 0.04 s
-ti <- proc.time()
-matrizDistancia <- createEuclideanDistanceUsingRcpp(diffCemigData)
-proc.time() - ti
+# Teste em Rcpp
+# Tempo: 0.05s
+#ti <- proc.time()
+#clustersRaio_Rcpp <- geradorClustersRcpp(as.matrix(distanceMatrix_Rcpp),as.matrix(diffCemigData),nrow(diffCemigData),radius)
+#proc.time() - ti
 
-## Matriz de Index
-# Tempo: 0.38 s
-ti <- proc.time()
-IndexMatrix <- createIndexMatrix(matrizDistancia)
-proc.time() - ti
+# Teste em Rcpp
+# Raio = 300 km e 499 Sim
+# Tempo: 20.13 segundos
+#ti <- proc.time()
+#resultSimulRaio_Rcpp <- MonteCarloRcpp(distanceMatrix_Rcpp,diffCemigData,radius,bound)
+#proc.time() - ti
+
+#ti <- proc.time()
+#significativosRaio_Rcpp <- clustersSignificativosRaioRcpp(resultSimulRaio_Rcpp,clustersRaio_Rcpp)
+#proc.time() - ti
 
 
-########################### UTILIZA RAIO #############################
+########################### ALGORITMOS EM R #############################
 
-#for (raio in seq(10000, 100000, by = 10000))
-#{
+## Tempo: 0.16 s
+#ti <- proc.time()
+#distanceMatrix_R <- createEuclideanDistance(diffCemigData)
+#proc.time() - ti
 
-# Tempo:  0,17s
-ti <- proc.time()
-clustersRaio <- geradorClusterPorRaio(matrizDistancia,diffCemigData,raio)
-proc.time() - ti
 
-# Raio = 200 km e 1000 Sim
+# # Tempo:  0,17s
+# ti <- proc.time()
+#radiusClusters_R <- clusterGeneratorRadius(distanceMatrix_R,diffCemigData,radius)
+# proc.time() - ti
+
 # Tempo: 15,00 S
-ti <- proc.time()
-resultSimulRaio <- monteCarloSimuRaio(diffCemigData, clustersRaio, raio, bound)
-proc.time() - ti
+# ti <- proc.time()
+#resultSimulRadius_R <- monteCarloSimuRadius(diffCemigData, radiusClusters_R, radius, bound)
+# proc.time() - ti
+
 
 # Tempo: 0,11 S
- ti <- proc.time()
- significativosRaio <- clustersSignificativosRaio(resultSimulRaio,clustersRaio,raio)
- proc.time() - ti
- print(raio)
- print(significativosRaio)
+#ti <- proc.time()
+#significantClusters_R <- significantRadiusClusters(resultSimulRadius_R,radiusClusters_R,alpha)
+#proc.time() - ti
 
- #}
+########################### SHINY ########################### 
 
-########################### UTILIZA K #############################
+#showSignificantClustersInfo(significantClusters_R,relacaoAlimentadorId)
+ 
 
-#para k = 30 levamos 155,88 segundos
-#com a remocao do segundo for e inclusao do rbind para alimentar resultados, o tempo caiu para 115,22 segundos
-#para k igual a 250 levou-se 125,68 segundos
-ti <- proc.time()
-clusters <- geradorCluster(IndexMatrix, diffCemigData, k)
-proc.time() - ti
-
-
-#200 simulacoes com k=10 levaram 28.694,02 segundos. Quase 8hrs
-# 66,77 segundos para uma simulacao de 100 iteracoes com k igual a 30. Isso apos as alteracoes
-# 1000 simulações para k igual a 250 levou 3.601,34 segundos ou 1hr
-ti <- proc.time()
-resultSimul <- monteCarloSimu(IndexMatrix,diffCemigData, clusters, k, bound)
-proc.time() - ti
-
-ti <- proc.time()
-significativos <- clustersSignificativos(resultSimul,clusters,k)
-proc.time() - ti
-
-print(significativos)
-#histograma(resultsimul,significativos)
-
-###### TESTE ######
-#para k = 100 e raio = 245895 o primeiro cluster é igual em ambos os casos
-# pelo print da para verificar se a estatistica de teste de ambos são iguais
-#print(clusters[clusters$X1 == 1,])
-#print(clustersRaio[[1]])
-###################
