@@ -63,7 +63,7 @@ createData <- function(joinData){
         alimentadora = joinData$alimentador[i],
         x = validX,
         y = validY,
-        difConsumo = joinData$ConsumoMedido.2018[i] - joinData$ConsumoMedido.2013[i],
+        difConsumo = abs(joinData$ConsumoMedido.2018[i] - joinData$ConsumoMedido.2013[i]),
         lat = validLat,
         lon = validLon
         
@@ -228,11 +228,11 @@ significantRadiusClusters <- function(resultSimul,radiusClusters,alpha){
       #salvando o centroide daquele cluster   
       significativosRadius <- append(significativosRadius,i)
     }
-    #if (pvalor < teste){
-    #  teste <- pvalor
-    #}
+    if (pvalor < teste){
+      teste <- pvalor
+    }
   }
-  #print(teste)
+  print(teste)
   return (significativosRadius)
 }
 
@@ -344,34 +344,48 @@ optionExcluded <- function(data)
   return (response)
 }
 
-calculator <- function(radius,bound,diffCemigData)
+calculator_R <- function(radius,bound,diffCemigData,alpha)
 {
 
-  distanceMatrix <- createEuclideanDistanceUsingRcpp(diffCemigData)
-  IndexMatrix <- createIndexMatrix(distanceMatrix)
-  radiusClusters <- clusterGeneratorRadius(distanceMatrix,diffCemigData,radius)
-  resultSimulRadius <- monteCarloSimuRadius(diffCemigData, radiusClusters, radius, bound)
-  significantRadiusClusters <- significantRadiusClusters(resultSimulRadius,radiusClusters,radius)
+  distanceMatrix_R <- createEuclideanDistance(diffCemigData)
+  radiusClusters_R <- clusterGeneratorRadius(distanceMatrix_R,diffCemigData,radius)
+  resultSimulRadius_R <- monteCarloSimuRadius(diffCemigData, radiusClusters_R, radius, bound)
+  significantClusters_R <- significantRadiusClusters(resultSimulRadius_R,radiusClusters_R,alpha)
+  #list_data_R <- list(distanceMatrix_R,radiusClusters_R,resultSimulRadius_R,significantClusters_R)
+  return(significantClusters_R)
 }
 
-showSignificantClustersInfo <- function(significantRadiusClusters,relacaoAlimentadorId)
+calculator_Rcpp <- function(radius,bound,diffCemigData,alpha)
 {
-  option = data.table(relacaoAlimentadorId[significantRadiusClusters,2:4])
+  
+  distanceMatrix_Rcpp <- createEuclideanDistanceUsingRcpp(diffCemigData)
+  clustersRaio_Rcpp <- geradorClustersRcpp(distanceMatrix_Rcpp,diffCemigData,radius)
+  resultSimulRaio_Rcpp <- MonteCarloRcpp(diffCemigData, clustersRaio_Rcpp, radius, bound)
+  significativosRaio_Rcpp <- clustersSignificativosRaioRcpp(resultSimulRaio_Rcpp,clustersRaio_Rcpp,alpha)
+}
+
+showSignificantClustersInfo <- function(significantClusters_R,relacaoAlimentadorId,radius_R)
+{
+
+  #significantClusters_R<- vector(list_data_R[4])
+
+  option = data.table(relacaoAlimentadorId[significantClusters_R,2:4])
   
   shp <- readOGR("Mapa\\.","MG_UF_2019", stringsAsFactors=FALSE, encoding="UTF-8")
   pal <- colorBin("Blues",domain = NULL,n=5) #cores do mapa
-  
-  
+  print(radius_R)
   leaflet(data = shp) %>%
     addProviderTiles("CartoDB.Positron") %>%
-    addPolygons(fillColor = ~pal(1), 
-                fillOpacity = 0.6, 
-                color = "#BDBDC3", 
-                weight = 1)%>%
-    addMarkers(lng = option$lon,lat= option$lat, clusterOptions = markerClusterOptions())
+    #addPolygons(fillColor = ~pal(1), 
+    #            fillOpacity = 0.8, 
+    #            color = "#BDBDC3", 
+    #            weight = 1)%>%
+    addCircles(lng = option$lon,lat= option$lat, radius = radius_R)
 }
 
-histogramaSignificantCluster <- function(resultsimul,significativos){
+histogramaSignificantCluster <- function(list_data_R){
+  resultsimul<- list_data_R[3]
+  significativos <- list_data_R[4]
   
   hist(resultSimul, xlim=c(min(c(resultSimul,significativos)), max(c(resultSimul,significativos))), col="light blue") 
   rug(resultSimul)

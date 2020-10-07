@@ -9,7 +9,7 @@ require(DT)
 
 
 source('main.r')
-source('shinydata.r')
+#source('shinydata.r')
 source(file="functions.r")
 
 ui <- fluidPage(
@@ -57,7 +57,11 @@ ui <- fluidPage(
                       mainPanel(
                         tags$h4("ANÁLISE DO CONSUMO DE ENERGIA POR MEIO DE ALIMENTADORES"),
                         #tags$h2("Texto h2"),
-                        tags$h5("A estatística Scan tem sido amplamente utilizados para identificar aglomerações anômalas em um ponto no espaço. Neste trabalho propomos a utilização do método Scan a partir de janelas circulares de varredura para a detectação de regiões nos quais houveram diferenças significativas de consumo de energia, no Estado de Minas Gerais, entre os anos de 2013 e 2018"),
+                        tags$h5("	Lorem ipsum imperdiet luctus aenean facilisis mauris ut metus eleifend, torquent conubia quam nisi lacinia aenean ac quisque, condimentum eros cras nullam adipiscing tortor mi dapibus. dolor nisi fames nec amet netus nostra feugiat tristique fringilla at inceptos mattis ornare venenatis, congue ultrices arcu egestas ullamcorper ornare euismod conubia proin venenatis nam lectus. quis scelerisque class quam etiam sapien dapibus purus cubilia tempor sapien nostra, malesuada varius arcu facilisis dapibus per malesuada suspendisse tortor. etiam vulputate enim rutrum orci venenatis dui tellus vehicula, lobortis aenean nibh ut mattis sapien nam ultricies, lacus erat ornare arcu rutrum tincidunt semper. 
+
+	Molestie condimentum blandit pharetra erat sem rhoncus, id feugiat suspendisse pulvinar hac per curabitur, proin semper maecenas erat etiam. augue feugiat nibh litora quis vivamus potenti vehicula risus, hac nibh et ultricies pretium nam leo habitasse, suscipit iaculis quam mi hendrerit etiam cubilia. cras malesuada augue laoreet bibendum viverra malesuada ac blandit at platea malesuada, torquent etiam inceptos netus sociosqu ac dictumst curae cursus inceptos, ad lobortis libero id class congue aliquam sollicitudin conubia maecenas. posuere laoreet risus habitant aenean scelerisque hac donec taciti, nunc a mauris varius habitasse amet sollicitudin, dolor enim hac consectetur mi cubilia massa. 
+
+	Auctor aptent enim, ut. "),
                         #tags$h4("Texto h4"),
                         #tags$h5("Texto h5"),
                         #tags$h6("Texto h6")
@@ -94,10 +98,17 @@ ui <- fluidPage(
                       sidebarLayout(
                         sidebarPanel(
                           tags$h4("Selecione os dados de entrada:"),
-                          #selectInput("numero","1. Selecione o número de alimentadoras dentro do cluster", choice = c("3" = 1, "10" =2, "100" = 3),selected = 1),
-                          selectInput("raio","1. Tamanho do raio", choice = c("1000" = 1, "5000" =2, "10000" = 3),selected = 1),
-                          selectInput("simulacao","2. Número de simulações", choice = c("10" = 1, "100" =2, "1000" = 3),selected = 1),
+                          radioButtons("codigo", "Algoritmo a ser utilizado:",
+                                       c("C++" = 1,
+                                         "R" = 2)),
+                          selectInput("raio","1. Tamanho do raio", choice = c("24000" = 24000, "34000" =34000, "44000" = 34000),selected = 24000),
+                          selectInput("alpha","2. Nível de Significância", choice = c("1%" = 0.01, "5%" =0.05, "10%" = 0.1),selected = 2),
+                          selectInput("simulacao","3. Número de simulações", choice = c("10" = 10, "100" =200, "1000" = 1000),selected = 1),
                           actionButton("submit", "Submit")
+                          #conditionalPanel(
+                          #  condition = "!is.null(action$significativosRaio_Rcpp) && !is.null(action$significativosRaio_R)",
+                          #plotOutput("histPlotSig")
+                          #)
                         ),
                         mainPanel(
                           leafletOutput("mapa",height = "90vh")
@@ -107,8 +118,8 @@ ui <- fluidPage(
              ),
              tabPanel("Análise de Resultados",
                         mainPanel(
-                          tableOutput("verossimilhanca"),
-                          tableOutput("significancia")
+                          #tableOutput("verossimilhanca"),
+                          #tableOutput("significancia")
                         )
                       )
              )
@@ -131,12 +142,7 @@ server <- function(input,output,session) {
 
 
   ######### TERCEIRA ABA ##################  
-  output$plot <- renderPlot({
-    if(input$EDA1== 1)
-      histMatrixSimul
-    else
-      histMatrixDist
-  })
+
   output$histPlot <- renderPlot(showHist(input$EDA2,dados2013,dados2018,diffCemigData))
   output$plot2 <- renderLeaflet({showMapInfo(input$EDA2,dados2013,dados2018,list_data)})
   output$sum <- renderPrint({showSummary(input$EDA2,dados2013,dados2018,diffCemigData)})
@@ -144,25 +150,44 @@ server <- function(input,output,session) {
   
   ######### QUARTA ABA ##################
   
+  action <- reactiveValues(data = NULL)
   
   observeEvent(input$submit, {
-    calculator(input$raio,input$simulacao)
+    if(input$codigo == 1)
+      action$list_data_Rcpp <- calculator_Rcpp(input$raio,input$simulacao,diffCemigData,input$alpha)
+    else
+      action$list_data_R <-calculator_R(input$raio,input$simulacao,diffCemigData,input$alpha)
   })
   
+
+  #  output$histPlotSig <- renderPlot({
+  #    if(input$codigo == 1)
+  #    {
+  #      if (is.null(action$significativosRaio_Rcpp)) return()
+  #      histogramaSignificantCluster(action$list_data_Rcpp)
+  #    }
+  #    else{
+  #      if (is.null(action$significantClusters_R)) return()
+  #      histogramaSignificantCluster(action$list_data_R)
+  #    }
+  #})
   
-  output$mapa <- renderLeaflet({
-    if(input$numeroMapa == 1){
-      mapa}
-    else if(input$numero == 2){
-      mapa}
-    else{
-      mapa}
-  })
+    output$mapa <- renderLeaflet({
+    
+    if(input$codigo == 1)
+    {
+      if (is.null(action$list_data_Rcpp)) return()
+      showSignificantClustersInfo(action$list_data_Rcpp,relacaoAlimentadorId,input$raio)
+    }
+      else{
+        if (is.null(action$list_data_R)) return()
+      showSignificantClustersInfo(action$list_data_R,relacaoAlimentadorId,input$raio)
+    }})
   
   ######### QUINTA ABA ##################
   
-  output$verossimilhanca <- renderTable(dados2013)
-  output$significancia <- renderTable(dados2013)
+  #output$verossimilhanca <- renderTable(dados2013)
+  #output$significancia <- renderTable(dados2013)
 }
 
 shinyApp(ui,server)

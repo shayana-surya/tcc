@@ -29,9 +29,14 @@ relacaoAlimentadorId <- data.frame(list_data[3])
 
 ###################### PARAMETROS PARA GERACAO DE CLUSTERS###################### 
 
-radius <- 300000
-bound <-1000
+radius <- 46460
+bound <-499
 alpha <- 0.05
+#ti <- proc.time()
+#significantClusters_R <- calculator_R(radius,bound,diffCemigData,alpha)
+#typeof(significantClusters_R)
+#showSignificantClustersInfo(significantClusters_R,relacaoAlimentadorId,radius)
+#proc.time() - ti
 
 
 ########################### ALGORITMOS EM RCPP ########################### 
@@ -61,27 +66,30 @@ alpha <- 0.05
 
 ########################### ALGORITMOS EM R #############################
 
+#for (radius in seq(from = 1500, to = 100000, by = 10))
+#{
 ## Tempo: 0.16 s
 #ti <- proc.time()
-#distanceMatrix_R <- createEuclideanDistance(diffCemigData)
+distanceMatrix_R <- createEuclideanDistance(diffCemigData)
 #proc.time() - ti
 
 
 # # Tempo:  0,17s
 # ti <- proc.time()
-#radiusClusters_R <- clusterGeneratorRadius(distanceMatrix_R,diffCemigData,radius)
+radiusClusters_R <- clusterGeneratorRadius(distanceMatrix_R,diffCemigData,radius)
 # proc.time() - ti
 
 # Tempo: 15,00 S
 # ti <- proc.time()
-#resultSimulRadius_R <- monteCarloSimuRadius(diffCemigData, radiusClusters_R, radius, bound)
+resultSimulRadius_R <- monteCarloSimuRadius(diffCemigData, radiusClusters_R, radius, bound)
 # proc.time() - ti
-
-
+#print(radius)
 # Tempo: 0,11 S
 #ti <- proc.time()
-#significantClusters_R <- significantRadiusClusters(resultSimulRadius_R,radiusClusters_R,alpha)
+significantClusters_R <- significantRadiusClusters(resultSimulRadius_R,radiusClusters_R,alpha)
 #proc.time() - ti
+#print(significantClusters_R)
+#}
 
 ########################### SHINY ########################### 
 

@@ -19,7 +19,7 @@
    matDist <- as.matrix( dist(dados[,c("x","y")], method = "euclidean") )
 
    ## Raio maximo para o cluster
-   Raio  <- 300000 ## Raio em metros
+   Raio  <- 46460 ## Raio em metros
    
    ## Manipulacao da matriz de Distancias
    ## Se o raio eh grande recebe N
@@ -82,4 +82,6 @@
    rug(vec.LLK)
    abline(v=BestLLK, lwd=2, lty=2, col="red")
    (pvalor <- (sum(vec.LLK > BestLLK) + 1)/(nsim + 1))
+   
+   print(pvalor)
 
