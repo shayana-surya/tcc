@@ -6,11 +6,10 @@ require(sf)
 require(ggplot2)
 require(shiny)
 require(DT)
+require(shinycssloaders)
+require(shinybusy)
 
-
-source('main.r')
-#source('shinydata.r')
-source(file="functions.r")
+source('inicialization.r')
 
 ui <- fluidPage(
   tags$head(
@@ -98,12 +97,23 @@ ui <- fluidPage(
                       sidebarLayout(
                         sidebarPanel(
                           tags$h4("Selecione os dados de entrada:"),
-                          radioButtons("codigo", "Algoritmo a ser utilizado:",
-                                       c("C++" = 1,
-                                         "R" = 2)),
-                          selectInput("raio","1. Tamanho do raio", choice = c("24000" = 24000, "34000" =34000, "44000" = 34000),selected = 24000),
-                          selectInput("alpha","2. Nível de Significância", choice = c("1%" = 0.01, "5%" =0.05, "10%" = 0.1),selected = 2),
-                          selectInput("simulacao","3. Número de simulações", choice = c("10" = 10, "100" =200, "1000" = 1000),selected = 1),
+                          selectInput("flag","1. Dados a serem utilizado", choice = c("Consumo de 2013" = 1, "Consumo de 2018" =2, "Diferença entre os anos" = 3),selected = 3),
+                          radioButtons("codigo", "2. Algoritmo a ser utilizado:",
+                                       c("R" = 1,
+                                         "C++" = 2),inline = TRUE),
+                          radioButtons("window", "3. Janela de varredura:",
+                                       c("Por Raio" = 1,
+                                         "Por K elementos" = 2),inline = TRUE),
+                          conditionalPanel(
+                            condition = "input.window == 1",
+                            selectInput("raio","4. Tamanho do raio", choice = c("55 km" = 55000, "65 km" = 65000, "75 km" = 75000),selected = 55000),
+                          ),
+                          conditionalPanel(
+                            condition = "input.window == 2",
+                            selectInput("k","4. Número K de elementos", choice = c("150" = 150, "250" =250, "500" = 500),selected = 150),
+                          ),
+                          selectInput("alpha","5. Nível de Significância", choice = c("1%" = 0.01, "5%" =0.05, "10%" = 0.1),selected = 0.05),
+                          selectInput("simulacao","6. Número de simulações", choice = c("99" = 99, "499" =499, "999" = 999),selected = 99),
                           actionButton("submit", "Submit")
                           #conditionalPanel(
                           #  condition = "!is.null(action$significativosRaio_Rcpp) && !is.null(action$significativosRaio_R)",
@@ -111,7 +121,7 @@ ui <- fluidPage(
                           #)
                         ),
                         mainPanel(
-                          leafletOutput("mapa",height = "90vh")
+                          leafletOutput("mapa",height = "90vh") %>% withSpinner(color="#0dc5c1")
                         )
                       )
              
@@ -153,10 +163,26 @@ server <- function(input,output,session) {
   action <- reactiveValues(data = NULL)
   
   observeEvent(input$submit, {
-    if(input$codigo == 1)
-      action$list_data_Rcpp <- calculator_Rcpp(input$raio,input$simulacao,diffCemigData,input$alpha)
+    show_modal_spinner(spin = "fading-circle",
+                       text = "Por favor, aguarde...")
+    if(input$window == 1)
+    {
+      if(input$codigo == 1)
+        action$list_data <- calculator_R(Shayinput$raio,input$simulacao,diffCemigData,input$alpha,input$flag)
+      
+      else
+        action$list_data <- calculator_Rcpp(input$raio,input$simulacao,diffCemigData,input$alpha,input$flag)
+      
+    }
     else
-      action$list_data_R <-calculator_R(input$raio,input$simulacao,diffCemigData,input$alpha)
+    {
+      if(input$codigo == 1)
+        action$list_data <-calculator_K_R(input$k,input$simulacao,diffCemigData,input$alpha,input$flag)
+      
+      else
+        action$list_data <-calculator_K_Rcpp(input$k,input$simulacao,diffCemigData,input$alpha,input$flag)
+    }
+    remove_modal_spinner()
   })
   
 
@@ -174,15 +200,17 @@ server <- function(input,output,session) {
   
     output$mapa <- renderLeaflet({
     
-    if(input$codigo == 1)
+    if(input$window == 1)
     {
-      if (is.null(action$list_data_Rcpp)) return()
-      showSignificantClustersInfo(action$list_data_Rcpp,relacaoAlimentadorId,input$raio)
+     if (is.null(action$list_data)) return()
+     showSignificantClustersInfo(action$list_data,relacaoAlimentadorId,input$raio)
     }
-      else{
-        if (is.null(action$list_data_R)) return()
-      showSignificantClustersInfo(action$list_data_R,relacaoAlimentadorId,input$raio)
-    }})
+    else
+    {
+        if (is.null(action$list_data)) return()
+    # showSignificantClustersInfo_k(action$list_data_R,relacaoAlimentadorId,input$raio)
+    }
+    })
   
   ######### QUINTA ABA ##################
   

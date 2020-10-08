@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <vector>
+#include <random>       // std::default_random_engine
+#include <chrono>       // std::chrono::system_clock
 #include <rcpp.h>
 using namespace Rcpp;
 
@@ -22,10 +25,11 @@ NumericMatrix createEuclideanDistanceRcpp(NumericMatrix CemigData,int n) {
 }
 
 // [[Rcpp::export]]
-NumericMatrix geradorClustersRcpp(NumericMatrix matrizDistancia, NumericMatrix diffCemigData,int N, int raio){
+NumericMatrix geradorClustersRcpp(NumericMatrix matrizDistancia, NumericVector consumo,int N, int raio){
   
+  //int col = type + 2; // indica a coluna em diffCemigData que contem o consumo a ser considerado na analise
   NumericMatrix clusters(N,3); // matriz para guardar os clusters gerados: Centroide; Qtde de alimentadores; Estatística
-
+  
   for(int i = 0; i < N; i++){ // Objetivo: gerar um cluster para cada alimentador na função de centroide
     
     double consumoIn = 0;
@@ -44,11 +48,11 @@ NumericMatrix geradorClustersRcpp(NumericMatrix matrizDistancia, NumericMatrix d
     // se for eu salvo o y no vetor x.in, c.c. salvo no vetor x.out
     for(int j = 0; j < N; j++){
       if(matrizDistancia(i,j) <= raio){
-        consumoIn = consumoIn + diffCemigData(j,3);
+        consumoIn = consumoIn + consumo(j);
         numIn = numIn + 1;
       }
       else{
-        consumoOut = consumoOut + diffCemigData(j,3);
+        consumoOut = consumoOut + consumo(j);
         numOut = numOut + 1;
       }
     }
@@ -58,10 +62,10 @@ NumericMatrix geradorClustersRcpp(NumericMatrix matrizDistancia, NumericMatrix d
     
     for(int j = 0; j < N; j++){
       if(matrizDistancia(i,j) <= raio){
-        parteIn = parteIn + pow((diffCemigData(j,3) - miz),2);
+        parteIn = parteIn + pow((consumo(j) - miz),2);
       }
       else{
-        parteOut = parteOut + pow((diffCemigData(j,3) - lambdaz),2);
+        parteOut = parteOut + pow((consumo(j) - lambdaz),2);
       }
     }
     
@@ -78,8 +82,9 @@ NumericMatrix geradorClustersRcpp(NumericMatrix matrizDistancia, NumericMatrix d
 }
 
 // [[Rcpp::export]]
-double SimulClustersRcpp(NumericMatrix matrizDistancia, NumericMatrix diffCemigData,int N, int raio){
+double SimulClustersRcpp(NumericMatrix matrizDistancia,NumericVector consumo,int N, int raio){
   
+  //int col = type + 2; // indica a coluna em diffCemigData que contem o consumo a ser considerado na analise
   double bestResult = 0;
   
   for(int i = 0; i < N; i++){ // Objetivo: gerar um cluster para cada alimentador na função de centroide
@@ -100,11 +105,11 @@ double SimulClustersRcpp(NumericMatrix matrizDistancia, NumericMatrix diffCemigD
     // se for eu salvo o y no vetor x.in, c.c. salvo no vetor x.out
     for(int j = 0; j < N; j++){
       if(matrizDistancia(i,j) <= raio){
-        consumoIn = consumoIn + diffCemigData(j,3);
+        consumoIn = consumoIn + consumo(j);
         numIn = numIn + 1;
       }
       else{
-        consumoOut = consumoOut + diffCemigData(j,3);
+        consumoOut = consumoOut + consumo(j);
         numOut = numOut + 1;
       }
     }
@@ -114,10 +119,10 @@ double SimulClustersRcpp(NumericMatrix matrizDistancia, NumericMatrix diffCemigD
     
     for(int j = 0; j < N; j++){
       if(matrizDistancia(i,j) <= raio){
-        parteIn = parteIn + pow((diffCemigData(j,3) - miz),2);
+        parteIn = parteIn + pow((consumo(j) - miz),2);
       }
       else{
-        parteOut = parteOut + pow((diffCemigData(j,3) - lambdaz),2);
+        parteOut = parteOut + pow((consumo(j) - lambdaz),2);
       }
     }
     
@@ -129,20 +134,23 @@ double SimulClustersRcpp(NumericMatrix matrizDistancia, NumericMatrix diffCemigD
     }
     
   }
- 
+  
   return(bestResult);
 }
 
-/*// [[Rcpp::export]]
-double* MonteCarloRcpp(NumericMatrix matrizDistancia, NumericMatrix diffCemigData,int N, int raio, int bound){
+// [[Rcpp::export]]
+NumericVector MonteCarloRcpp(NumericMatrix matrizDistancia,NumericVector consumo,int N, int raio, int bound){
   
-  double resultSimul[bound];
+  NumericVector resultSimul(bound);
   
   for(int i = 0; i < bound; i++){
-    NumericMatrix dados = diffCemigData;
-    std::shuffle(std::begin(dados(0,3)),std::end(dados(N,3));
-    resultSimul[i] <- SimulClustersRcpp(matrizDistancia,dados,N,raio);
+    
+    NumericVector dados = clone(consumo);
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(dados.begin(),dados.end(),std::default_random_engine(seed));
+    
+    resultSimul(i) = SimulClustersRcpp(matrizDistancia,dados,N,raio);
   }
   
   return(resultSimul);
-}*/
+}
