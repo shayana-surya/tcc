@@ -9,6 +9,7 @@ require(data.table)
 require(REAT)
 require(Rcpp)
 require(rlist)
+require(reshape)
 
 source(file="functions.r")
 sourceCpp('functionsC++.cpp')
@@ -31,12 +32,12 @@ relacaoAlimentadorId <- data.frame(list_data[3])
 radius <- 55000
 bound <-99
 alpha <- 0.05
+k <- 250
 
 #ti <- proc.time()
 
-sig <- calculator_R(radius,bound,diffCemigData,alpha,1)
-print(sig)
-showSignificantClustersInfo(sig,relacaoAlimentadorId,radius)
+sig <- calculator_K_R(k,bound,diffCemigData,alpha,1)
+boxsplotFunction(diffCemigData,3)
 
 
 #significantClusters_R <- calculator_R(radius,bound,diffCemigData,alpha)

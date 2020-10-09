@@ -144,8 +144,7 @@ MonteCarloRcpp <- function(matrizDistancia,diffCemigData,raio,bound){
   return (resultSimul)
 }
 
-clustersSignificativosRaioRcpp <- function(resultSimul,clustersRaioRcpp){
-  alpha <- 0.05
+clustersSignificativosRaioRcpp <- function(resultSimul,clustersRaioRcpp,alpha){
   significativosRaio <- vector()
   nsim = length(resultSimul)
   #abaixo preciso ver quantas observacoes na simulacao sao maiores que o valor realmente observado
@@ -492,10 +491,13 @@ calculator_Rcpp <- function(radius,bound,diffCemigData,alpha,flag)
   alpha <- as.numeric(alpha)
   flag <- as.numeric(flag)
   
+  col <- whatDataWillBeUsed_K(diffCemigData,flag)
+  
   distanceMatrix_Rcpp <- createEuclideanDistanceUsingRcpp(diffCemigData)
-  clustersRaio_Rcpp <- geradorClustersRcpp(distanceMatrix_Rcpp,diffCemigData,radius,flag)
-  resultSimulRaio_Rcpp <- MonteCarloRcpp(diffCemigData, clustersRaio_Rcpp, radius, bound,flag)
+  clustersRaio_Rcpp <- geradorClustersRcpp(as.matrix(distanceMatrix_Rcpp),as.vector(diffCemigData[,col]),nrow(diffCemigData),radius)
+  resultSimulRaio_Rcpp <- MonteCarloRcpp(as.matrix(distanceMatrix_Rcpp), as.vector(diffCemigData[,col]),nrow(diffCemigData), radius, bound)
   significativosRaio_Rcpp <- clustersSignificativosRaioRcpp(resultSimulRaio_Rcpp,clustersRaio_Rcpp,alpha)
+  return(significativosRaio_Rcpp)
 }
 
 calculator_K_R <- function(k,bound,diffCemigData,alpha,flag)
@@ -522,6 +524,8 @@ calculator_K_Rcpp <- function(k,bound,diffCemigData,alpha,flag)
   
   distanceMatrix_K_Rcpp <- createEuclideanDistanceUsingRcpp(diffCemigData)
   createIndexMatrix_K_Rcpp <- createIndexMatrix(distanceMatrix_K_R)
+  
+  return(createIndexMatrix_K_Rcpp)
 }
 
 showSignificantClustersInfo <- function(significantClusters_R,relacaoAlimentadorId,radius_R)
@@ -539,12 +543,34 @@ showSignificantClustersInfo <- function(significantClusters_R,relacaoAlimentador
     addCircles(lng = option$lon,lat= option$lat,weight = 1, radius = as.numeric(radius_R))
 }
 
-histogramaSignificantCluster <- function(list_data_R){
-  resultsimul<- list_data_R[3]
-  significativos <- list_data_R[4]
+boxsplotFunction<- function(diffCemigData,flag){
+
+  if(flag == 1 || flag ==2)
+  {
+  df3 <- data.frame(".2013" = remove_outliers(diffCemigData$consumo2013) ,".2018" = remove_outliers(diffCemigData$consumo2018))
   
-  hist(resultSimul, xlim=c(min(c(resultSimul,significativos)), max(c(resultSimul,significativos))), col="light blue") 
-  rug(resultSimul)
-  abline(v=significativos, lwd=2, lty=2, col="red")
+  meltData <- melt(df3)
+                              
+  ggplot(meltData, aes(factor(variable),value)) + 
+    geom_boxplot(fill="slateblue", alpha=0.2) + 
+    labs(x="Ano", y = "Consumo (Kwh)")
+  }
+  else if (flag ==3)
+  {
+    ggplot(diffCemigData, aes(x="Diferença entre anos",y=remove_outliers(difConsumo))) + 
+      geom_boxplot(fill="slateblue", alpha=0.2,width = .2) + 
+      labs(y = "Consumo (Kwh)")
+    
+  }
+
+}
+
+remove_outliers <- function(x, na.rm = TRUE, ...) {
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
+  H <- 2.5 * IQR(x, na.rm = na.rm)
+  y <- x
+  y[x < (qnt[1] - H)] <- NA
+  y[x > (qnt[2] + H)] <- NA
+  y
 }
 

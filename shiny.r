@@ -86,6 +86,7 @@ ui <- fluidPage(
                               plotOutput("histPlot"),
                               h4("Sumário"),
                               verbatimTextOutput("sum"),
+                              plotOutput("boxsplot")
                             )
                         ),
                         mainPanel(
@@ -115,16 +116,11 @@ ui <- fluidPage(
                           selectInput("alpha","5. Nível de Significância", choice = c("1%" = 0.01, "5%" =0.05, "10%" = 0.1),selected = 0.05),
                           selectInput("simulacao","6. Número de simulações", choice = c("99" = 99, "499" =499, "999" = 999),selected = 99),
                           actionButton("submit", "Submit")
-                          #conditionalPanel(
-                          #  condition = "!is.null(action$significativosRaio_Rcpp) && !is.null(action$significativosRaio_R)",
-                          #plotOutput("histPlotSig")
-                          #)
                         ),
                         mainPanel(
                           leafletOutput("mapa",height = "90vh") %>% withSpinner(color="#0dc5c1")
                         )
                       )
-             
              ),
              tabPanel("Análise de Resultados",
                         mainPanel(
@@ -156,6 +152,7 @@ server <- function(input,output,session) {
   output$histPlot <- renderPlot(showHist(input$EDA2,dados2013,dados2018,diffCemigData))
   output$plot2 <- renderLeaflet({showMapInfo(input$EDA2,dados2013,dados2018,list_data)})
   output$sum <- renderPrint({showSummary(input$EDA2,dados2013,dados2018,diffCemigData)})
+  output$boxsplot <- renderPlot(boxsplotFunction(diffCemigData,input$EDA2))
 
   
   ######### QUARTA ABA ##################
@@ -168,7 +165,7 @@ server <- function(input,output,session) {
     if(input$window == 1)
     {
       if(input$codigo == 1)
-        action$list_data <- calculator_R(Shayinput$raio,input$simulacao,diffCemigData,input$alpha,input$flag)
+        action$list_data <- calculator_R(input$raio,input$simulacao,diffCemigData,input$alpha,input$flag)
       
       else
         action$list_data <- calculator_Rcpp(input$raio,input$simulacao,diffCemigData,input$alpha,input$flag)
@@ -185,19 +182,6 @@ server <- function(input,output,session) {
     remove_modal_spinner()
   })
   
-
-  #  output$histPlotSig <- renderPlot({
-  #    if(input$codigo == 1)
-  #    {
-  #      if (is.null(action$significativosRaio_Rcpp)) return()
-  #      histogramaSignificantCluster(action$list_data_Rcpp)
-  #    }
-  #    else{
-  #      if (is.null(action$significantClusters_R)) return()
-  #      histogramaSignificantCluster(action$list_data_R)
-  #    }
-  #})
-  
     output$mapa <- renderLeaflet({
     
     if(input$window == 1)
@@ -211,7 +195,7 @@ server <- function(input,output,session) {
     # showSignificantClustersInfo_k(action$list_data_R,relacaoAlimentadorId,input$raio)
     }
     })
-  
+    
   ######### QUINTA ABA ##################
   
   #output$verossimilhanca <- renderTable(dados2013)
