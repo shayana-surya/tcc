@@ -28,8 +28,8 @@ ui <- fluidPage(
                       }
                       
                       p{
-                       color:yellow;
-                       fon
+                      color: #00a651;
+                      text-align: justify;
                        t-size 30px;
                       }
                       
@@ -55,15 +55,11 @@ ui <- fluidPage(
              tabPanel("Sobre o trabalho",
                       mainPanel(
                         tags$h4("ANÁLISE DO CONSUMO DE ENERGIA POR MEIO DE ALIMENTADORES"),
-                        #tags$h2("Texto h2"),
-                        tags$h5("	Lorem ipsum imperdiet luctus aenean facilisis mauris ut metus eleifend, torquent conubia quam nisi lacinia aenean ac quisque, condimentum eros cras nullam adipiscing tortor mi dapibus. dolor nisi fames nec amet netus nostra feugiat tristique fringilla at inceptos mattis ornare venenatis, congue ultrices arcu egestas ullamcorper ornare euismod conubia proin venenatis nam lectus. quis scelerisque class quam etiam sapien dapibus purus cubilia tempor sapien nostra, malesuada varius arcu facilisis dapibus per malesuada suspendisse tortor. etiam vulputate enim rutrum orci venenatis dui tellus vehicula, lobortis aenean nibh ut mattis sapien nam ultricies, lacus erat ornare arcu rutrum tincidunt semper. 
-
-	Molestie condimentum blandit pharetra erat sem rhoncus, id feugiat suspendisse pulvinar hac per curabitur, proin semper maecenas erat etiam. augue feugiat nibh litora quis vivamus potenti vehicula risus, hac nibh et ultricies pretium nam leo habitasse, suscipit iaculis quam mi hendrerit etiam cubilia. cras malesuada augue laoreet bibendum viverra malesuada ac blandit at platea malesuada, torquent etiam inceptos netus sociosqu ac dictumst curae cursus inceptos, ad lobortis libero id class congue aliquam sollicitudin conubia maecenas. posuere laoreet risus habitant aenean scelerisque hac donec taciti, nunc a mauris varius habitasse amet sollicitudin, dolor enim hac consectetur mi cubilia massa. 
-
-	Auctor aptent enim, ut. "),
-                        #tags$h4("Texto h4"),
-                        #tags$h5("Texto h5"),
-                        #tags$h6("Texto h6")
+                        HTML("
+                          <p>Lorem ipsum erat aenean sapien eros mauris maecenas ut interdum bibendum cras dictumst nibh etiam id, habitasse lacinia tristique ligula potenti quisque volutpat ut litora bibendum mollis justo sagittis curae. leo nostra nam est tempus enim erat class, quisque iaculis vitae mattis ligula porttitor leo porta, habitasse mollis maecenas at sit volutpat. libero quis quam ligula ante hendrerit inceptos scelerisque tristique, arcu venenatis lectus malesuada vehicula adipiscing proin nibh, est faucibus netus quam pretium velit vestibulum. euismod sem eleifend sed volutpat condimentum placerat eros nec rutrum, platea vulputate semper etiam donec ipsum etiam nulla tempus, aenean auctor dapibus taciti sapien phasellus ultricies duis.</p>
+                          <p>Quis cursus magna rutrum tincidunt tristique lorem fringilla curabitur, taciti cubilia sapien ornare sodales pharetra duis, suscipit integer potenti himenaeos felis et etiam. malesuada sociosqu sem commodo molestie platea phasellus tellus nibh metus dictumst tempor, magna euismod posuere lobortis himenaeos quisque aenean pulvinar ut quam, nisl sed tincidunt hac primis elit nam ultrices habitasse amet. inceptos curabitur euismod nostra aptent potenti dui id amet, praesent sed nam ut sagittis porta himenaeos aliquam primis, augue erat ornare adipiscing donec hac lacus. tincidunt metus adipiscing vivamus tempor commodo quisque a senectus, scelerisque ut nulla conubia facilisis erat cursus, odio metus class praesent id vehicula libero. </p>  
+                          <p>Aliquam dui sollicitudin quam interdum orci lobortis posuere cubilia iaculis, auctor venenatis ut rhoncus varius in convallis odio, nisl dapibus aenean sociosqu quisque varius in turpis. est praesent integer habitasse euismod augue ut imperdiet sollicitudin, senectus eget aptent nullam vehicula curae curabitur potenti, ut nisl luctus ante aliquam fermentum lobortis. justo sapien at lobortis cursus rutrum ultricies non donec phasellus curabitur, risus feugiat sociosqu laoreet suscipit donec egestas leo diam aliquet, tempor a fames orci nibh fermentum posuere auctor ipsum. class tincidunt at et vivamus tempor non vehicula, dictumst potenti odio faucibus lectus eros. </p>  
+                        "),
                       )
                       
                       ),
@@ -88,7 +84,7 @@ ui <- fluidPage(
                               verbatimTextOutput("sum"),
                               plotOutput("boxsplot")
                             )
-                        ),
+                            , height=1),
                         mainPanel(
                            leafletOutput("plot2",height = "90vh")
                         )
@@ -117,20 +113,32 @@ ui <- fluidPage(
                           selectInput("simulacao","6. Número de simulações", choice = c("99" = 99, "499" =499, "999" = 999),selected = 99),
                           actionButton("submit", "Submit")
                         ),
-                        mainPanel(
-                          leafletOutput("mapa",height = "90vh") %>% withSpinner(color="#0dc5c1")
+                      mainPanel(
+                        tags$h4("Informações gerais"),
+                        HTML("
+                          <p> A partir dos dados selecionados é possível calcular, em tempo real e a partir dos parâmetros informados, os clusters significativos. Os valores de resultado serão disponibilizado na Aba 'Análise de Resultados'</p>
+                          <p> 1. Dados a serem utilizado: Aqui deve ser selecionado os dados de entrada que deseja analisar, estes podem ser os dados de consumo de 2013, consumo de 2018 ou a diferença de consumo entre os dois anos</p>
+                          <p> 2. Algoritmo a ser utilizado: Para analisar o tempo de execução, disponibilizamos o código em duas linguagens diferentes: o R e o C++ (Rcpp). Por ser uma linguagem de mais baixo nível, é esperado que o tempo de execução seja menor no algoritmo em C++. Vale resaltar que não são todas as funções que foram isoladas em C++ e sim aquelas que consideramos as mais importantes: o cálculo de distância, a geração de clusters e a simulação de monte carlo. </p>
+                          <p> 3. Janela de varredura: Duas diferentes abordagens foram disponibilizadas; a primeira utiliza um raio fixo e cada cluster contem números de alimentadores diferentes desde que a distancia entre eles seja menor ou igual ao raio. Já utilizando K, limitados o número de alimentadores dentro do cluster, isso signifca q surgirão clusters de raios diferentes porém com número de elementos iguais.</p>
+                          <p> 4. Número K de elementos/Número K de elementos: Caso opte por realizar o calculo por Raio, o tamanho no raio poderá ser selecionado no item 4; Porém se deseja utilizar K a opção disponibilizará a seleção do número de elementos K dentro do cluster.</p>
+                          <p> 5. Nível de Significância: Os níveis de significância mais comuns forám disponibilizados, sendo eles 1%,5% e 10%. Este valor está associado com o nível de confiança de nosso teste; A um alfa de 10% temos um nível de 90% de confiança; para 5% , 95% de confiança e assim sucessivamente. </p>
+                          <p> 6. Número de simulações: Por fim, temos um número de simulações, este parâmetro impacta diretamente no tempo de execução do programa. Quanto mais o número de simulações, mais confiável será o resultado gerado porém, mais tempo levará para rodar o algoritmo.</p>
+                          ")
                         )
                       )
-             ),
-             tabPanel("Análise de Resultados",
-                        mainPanel(
-                          #tableOutput("verossimilhanca"),
-                          #tableOutput("significancia")
+                     ),
+                     tabPanel("Análise de Resultados",
+                              sidebarLayout(
+                                
+                              ),
+                              mainPanel(
+                                leafletOutput("mapa",height = "90vh") %>% withSpinner(color="#0dc5c1")
+                              )
                         )
-                      )
-             )
+                     
             
       )
+)
 
 server <- function(input,output,session) {
   
@@ -150,13 +158,16 @@ server <- function(input,output,session) {
   ######### TERCEIRA ABA ##################  
 
   output$histPlot <- renderPlot(showHist(input$EDA2,dados2013,dados2018,diffCemigData))
-  output$plot2 <- renderLeaflet({showMapInfo(input$EDA2,dados2013,dados2018,list_data)})
+  output$plot2 <- renderLeaflet({showMapInfo(input$EDA2,list_data,relacaoAlimentadorId)})
   output$sum <- renderPrint({showSummary(input$EDA2,dados2013,dados2018,diffCemigData)})
   output$boxsplot <- renderPlot(boxsplotFunction(diffCemigData,input$EDA2))
 
   
   ######### QUARTA ABA ##################
   
+
+    
+  ######### QUINTA ABA ##################
   action <- reactiveValues(data = NULL)
   
   observeEvent(input$submit, {
@@ -182,24 +193,11 @@ server <- function(input,output,session) {
     remove_modal_spinner()
   })
   
-    output$mapa <- renderLeaflet({
-    
-    if(input$window == 1)
-    {
-     if (is.null(action$list_data)) return()
-     showSignificantClustersInfo(action$list_data,relacaoAlimentadorId,input$raio)
-    }
-    else
-    {
-        if (is.null(action$list_data)) return()
-    # showSignificantClustersInfo_k(action$list_data_R,relacaoAlimentadorId,input$raio)
-    }
-    })
-    
-  ######### QUINTA ABA ##################
-  
-  #output$verossimilhanca <- renderTable(dados2013)
-  #output$significancia <- renderTable(dados2013)
+  output$mapa <- renderLeaflet({
+      if (is.null(action$list_data)) return()
+      showSignificantClustersInfo(action$list_data,relacaoAlimentadorId,input$raio)
+  })
+
 }
 
 shinyApp(ui,server)
