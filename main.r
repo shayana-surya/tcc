@@ -47,9 +47,9 @@ sig <- calculator_K_R(k,bound,diffCemigData,alpha,1)
 #boxsplotFunction(diffCemigData,2)
 
 
-significantClusters_R <- calculator_R(radius,bound,diffCemigData,alpha,1)
-print(significantClusters_R)
-showSignificantClustersInfo(significantClusters_R,relacaoAlimentadorId,radius)
+#data <- calculator_R(radius,bound,diffCemigData,alpha,1)
+#showSignificantClustersInfo(data[[1]],relacaoAlimentadorId)
+#print(data[[2]][[2]])
 #proc.time() - ti
 
 

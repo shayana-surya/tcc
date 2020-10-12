@@ -14,17 +14,8 @@ source('inicialization.r')
 ui <- fluidPage(
   tags$head(
     tags$style(HTML("
-                      @import url('//fonts.googleapis.com/css?family-Lobster|Cabin:400,700');
-                      
-                      h1 {
-                        font-family:'Lobster',cursive;
-                        font-weight:500;
-                        font-height:1.1;
-                      }
-                      h3{
-                        font-family:'Lobster',cursive;
-                        font-weight:300;
-                        line-height:1.1;
+                      h4{
+                        text-align: center;
                       }
                       
                       p{
@@ -38,31 +29,32 @@ ui <- fluidPage(
                       color: #00a651;
                       }
                       
-                      tbody{
-                      background-color:#ecfff5;
-                      color: #00a651;
-                      }
-                      
-                      tabPanel{
-                      color: #00a651;
-                      background-color:#ecfff5;
-                      }
-                      ")
+                    ")
                
     )
   ),
   navbarPage(title = tags$img(src="https://seeklogo.com/images/C/CEMIG-logo-42E5BC7D36-seeklogo.com.png", height = 30, width = 90),
+             ######### PRIMEIRA ABA ######### 
              tabPanel("Sobre o trabalho",
                       mainPanel(
-                        tags$h4("ANÁLISE DO CONSUMO DE ENERGIA POR MEIO DE ALIMENTADORES"),
+                        tags$h4("Análise comparativa de eficiência computacional entre duas linguagens de programação na implementação da estatística de varredura espacial - Scan"),
                         HTML("
-                          <p>Lorem ipsum erat aenean sapien eros mauris maecenas ut interdum bibendum cras dictumst nibh etiam id, habitasse lacinia tristique ligula potenti quisque volutpat ut litora bibendum mollis justo sagittis curae. leo nostra nam est tempus enim erat class, quisque iaculis vitae mattis ligula porttitor leo porta, habitasse mollis maecenas at sit volutpat. libero quis quam ligula ante hendrerit inceptos scelerisque tristique, arcu venenatis lectus malesuada vehicula adipiscing proin nibh, est faucibus netus quam pretium velit vestibulum. euismod sem eleifend sed volutpat condimentum placerat eros nec rutrum, platea vulputate semper etiam donec ipsum etiam nulla tempus, aenean auctor dapibus taciti sapien phasellus ultricies duis.</p>
-                          <p>Quis cursus magna rutrum tincidunt tristique lorem fringilla curabitur, taciti cubilia sapien ornare sodales pharetra duis, suscipit integer potenti himenaeos felis et etiam. malesuada sociosqu sem commodo molestie platea phasellus tellus nibh metus dictumst tempor, magna euismod posuere lobortis himenaeos quisque aenean pulvinar ut quam, nisl sed tincidunt hac primis elit nam ultrices habitasse amet. inceptos curabitur euismod nostra aptent potenti dui id amet, praesent sed nam ut sagittis porta himenaeos aliquam primis, augue erat ornare adipiscing donec hac lacus. tincidunt metus adipiscing vivamus tempor commodo quisque a senectus, scelerisque ut nulla conubia facilisis erat cursus, odio metus class praesent id vehicula libero. </p>  
-                          <p>Aliquam dui sollicitudin quam interdum orci lobortis posuere cubilia iaculis, auctor venenatis ut rhoncus varius in convallis odio, nisl dapibus aenean sociosqu quisque varius in turpis. est praesent integer habitasse euismod augue ut imperdiet sollicitudin, senectus eget aptent nullam vehicula curae curabitur potenti, ut nisl luctus ante aliquam fermentum lobortis. justo sapien at lobortis cursus rutrum ultricies non donec phasellus curabitur, risus feugiat sociosqu laoreet suscipit donec egestas leo diam aliquet, tempor a fames orci nibh fermentum posuere auctor ipsum. class tincidunt at et vivamus tempor non vehicula, dictumst potenti odio faucibus lectus eros. </p>  
-                        ")
+                          <p> Um dos principais métodos utilizados para detecção de conglomerados espaciais é o método Scan. Com ele, é possível identificar regiões onde a incidência média do evento de interesse é significativamente maior ou menor que as demais regiões. </p>
+                          <p> Para identificar tais regiões, disponibilizamos uma interface amigável que permite compreender a natureza dos dados analisados, assim como os resultados gerados a partir da aplicação do Scan em diferentes parâmetros, como por exemplo: 
+                              <ul>
+                                <li> Linguagem de programação;</li>
+                                <li> Dados de entrada;</li>
+                                <li> Janela de varredura;</li>
+                                <li> Número de simulações;</li>
+                              </ul>  
+                          </p>
+                          <p>Dessa forma, oferecemos  </p>
+
+                             ")
                       )
                       
                       ),
+             ######### SEGUNDA ABA ######### 
              tabPanel("Dados",
                 sidebarLayout(
                   sidebarPanel(
@@ -73,6 +65,7 @@ ui <- fluidPage(
                   )
                 )
              ),
+             ######### TERCEIRA ABA ######### 
              tabPanel("EDA",
                       sidebarLayout(
                         sidebarPanel(
@@ -90,7 +83,8 @@ ui <- fluidPage(
                         )
                       )
                   ),
-             tabPanel("Dados de Entrada",
+             ######### QUARTA ABA ######### 
+             tabPanel("Parâmetros de Entrada",
                       sidebarLayout(
                         sidebarPanel(
                           tags$h4("Selecione os dados de entrada:"),
@@ -116,27 +110,25 @@ ui <- fluidPage(
                       mainPanel(
                         tags$h4("Informações gerais"),
                         HTML("
-                          <p> A partir dos dados selecionados é possível calcular, em tempo real e a partir dos parâmetros informados, os clusters significativos. Os valores de resultado serão disponibilizado na Aba 'Análise de Resultados'</p>
-                          <p> 1. Dados a serem utilizado: Aqui deve ser selecionado os dados de entrada que deseja analisar, estes podem ser os dados de consumo de 2013, consumo de 2018 ou a diferença de consumo entre os dois anos</p>
-                          <p> 2. Algoritmo a ser utilizado: Para analisar o tempo de execução, disponibilizamos o código em duas linguagens diferentes: o R e o C++ (Rcpp). Por ser uma linguagem de mais baixo nível, é esperado que o tempo de execução seja menor no algoritmo em C++. Vale resaltar que não são todas as funções que foram isoladas em C++ e sim aquelas que consideramos as mais importantes: o cálculo de distância, a geração de clusters e a simulação de monte carlo. </p>
-                          <p> 3. Janela de varredura: Duas diferentes abordagens foram disponibilizadas; a primeira utiliza um raio fixo e cada cluster contem números de alimentadores diferentes desde que a distancia entre eles seja menor ou igual ao raio. Já utilizando K, limitados o número de alimentadores dentro do cluster, isso signifca q surgirão clusters de raios diferentes porém com número de elementos iguais.</p>
-                          <p> 4. Número K de elementos/Número K de elementos: Caso opte por realizar o calculo por Raio, o tamanho no raio poderá ser selecionado no item 4; Porém se deseja utilizar K a opção disponibilizará a seleção do número de elementos K dentro do cluster.</p>
-                          <p> 5. Nível de Significância: Os níveis de significância mais comuns forám disponibilizados, sendo eles 1%,5% e 10%. Este valor está associado com o nível de confiança de nosso teste; A um alfa de 10% temos um nível de 90% de confiança; para 5% , 95% de confiança e assim sucessivamente. </p>
-                          <p> 6. Número de simulações: Por fim, temos um número de simulações, este parâmetro impacta diretamente no tempo de execução do programa. Quanto mais o número de simulações, mais confiável será o resultado gerado porém, mais tempo levará para rodar o algoritmo.</p>
-                          ")
+                          <p> A partir dos dados selecionados é possível calcular, em tempo real, os clusters significativos e o tempo de execução das funções mais relevantes. Os resultado serão disponibilizado na Aba <b>'Análise de Resultados'</b></p>
+                          <p><b> 1. Dados a serem utilizado:</b> Aqui deve ser selecionado os dados de entrada que deseja analisar, estes podem ser os dados de consumo de 2013, consumo de 2018 ou a diferença de consumo entre os dois anos</p>
+                          <p><b> 2. Algoritmo a ser utilizado:</b> Para analisar o tempo de execução, disponibilizamos o código em duas linguagens diferentes: o R e o C++ (Rcpp). Por ser uma linguagem de mais baixo nível, é esperado que o tempo de execução seja menor no algoritmo em C++. Vale resaltar que não são todas as funções que foram isoladas em C++ e sim aquelas que consideramos as mais importantes: o cálculo de distância, a geração de clusters e a simulação de monte carlo. </p>
+                          <p><b> 3. Janela de varredura:</b> Duas diferentes abordagens foram disponibilizadas; a primeira utiliza um raio fixo e cada cluster contem números de alimentadores diferentes desde que a distancia entre eles seja menor ou igual ao raio. Já utilizando K, limitados o número de alimentadores dentro do cluster, isso signifca q surgirão clusters de raios diferentes porém com número de elementos iguais.</p>
+                          <p><b> 4. Tamanho do raio/Número K de elementos:</b> Caso opte por realizar o calculo por Raio, o tamanho do raio poderá ser selecionado no item 4; Porém se deseja utilizar K a opção disponibilizará a seleção do número de elementos K dentro do cluster.</p>
+                          <p><b> 5. Nível de Significância:</b> Os níveis de significância mais comuns forám disponibilizados, sendo eles 1%,5% e 10%. Este valor está associado com o nível de confiança de nosso teste; A um alfa de 10% temos um nível de 90% de confiança; para 5% , 95% de confiança e assim sucessivamente. </p>
+                          <p><b> 6. Número de simulações:</b> Por fim, disponibilizamos o número de simulações, este parâmetro impacta diretamente no tempo de execução do programa. Quanto maior o número de simulações, mais confiável será o resultado gerado porém,levará mais tempo para os resultados serem gerados.</p>
+                          <p> Para executar o programa, após escolher os parâmetros desejados, submeta os dados e aguarde até a execução do programa ser finalizada.</p>
+                             ")
                         )
                       )
                      ),
+             ######### QUINTA ABA ######### 
                      tabPanel("Análise de Resultados",
                               sidebarLayout(
                                 sidebarPanel(
-                                  tags$h4("Entradas escolhidas"),
-                                  textOutput("option1"),
-                                  textOutput("option2"),
-                                  textOutput("option3"),
-                                  textOutput("option4"),
-                                  textOutput("option5"),
-                                  textOutput("option6"),
+                                  htmlOutput("option"),
+                                  htmlOutput("time"),
+                                  htmlOutput("sig"),
                                 ),
                                 mainPanel(
                                 leafletOutput("mapa",height = "90vh") %>% withSpinner(color="#0dc5c1")
@@ -211,66 +203,81 @@ server <- function(input,output,session) {
       "Dados de entrada: Diferença de consumo entre os anos;"
   })
   
-  output$option2 <- renderText({
-    if (is.null(action$list_data)) return()
+
+  linguagem <- function()({
     if (input$codigo == 1)
-      "Linguagem utilizada: R;"
-    else if (input$codigo == 2)
-      "Linguagem utilizada: C++;"
+      return("R")
+    else
+      return("C++")
   })
   
-  output$option3 <- renderText({
-    if (is.null(action$list_data)) return()
+  varredura <- function()({
     if (input$window == 1)
-      "Janela de varredura por Raio fixo;"
-    else if (input$window == 2)
-      "Janela de varredura por K elementos fixo;"
+      return("Raio")
+    else
+      return("K")
   })
   
-  output$option4 <- renderText({
+  janela <-function()
+  ({
+    if (input$window == 1)
+      return(as.numeric(input$raio)/1000)
+    else
+      return(input$k)
+  })
+  
+  unt <- function()({
+    if (input$window == 1)
+      return("km<br>")
+    else
+      return("elementos<br>")
+  })
+  
+  output$option <- renderText({
     if (is.null(action$list_data)) return()
-    if (input$window == 1){
-      if(input$raio == 150)
-        "Raio utilizado: 55km;"
-      if(input$raio == 250)
-        "Raio utilizado: 65km;"
-      if(input$raio == 500)
-        "Raio utilizado: 75km;"
+    paste("<b>Entradas escolhidas<br></b>",
+          "<b>Linguagem utilizada : </b>", linguagem(), "<br>",
+          "<b>Janela de varredura : </b>", varredura(), "fixo<br>",
+          "<b>", varredura(), "utilizado: </b>", janela() , unt(),
+          "<b>Nível de significancia: </b>", as.numeric(input$alpha)*100, "%<br>",
+          "<b>simulações de Monte Carlo: </b>", input$simulacao , "iterações<br><br>")
+    
+  })
+  
+  output$time <- renderText({
+    if (is.null(action$list_data)) return()
+    if(input$window == 1)
+    {
+      paste("<b>Tempo de execução<br></b>",
+            "<b>Matriz de Distância : </b>", action$list_data[[2]][1], "seg<br>",
+            "<b>Geração de Clusters : </b>", action$list_data[[2]][2], "seg<br>",
+            "<b>Simulação de Monte Carlo: </b>", action$list_data[[2]][3], "seg<br>",
+            "<b>Clusters Sgnificativos: </b>", action$list_data[[2]][4], "seg<br>",
+            "<b>Total: </b>", action$list_data[[2]][5], "seg<br><br>")
+      
+    }
+    else
+    {
+    paste("<b>Tempo de execução<br></b>",
+          "<b>Matriz de Distância : </b>", action$list_data[[2]][1], "seg<br>",
+          "<b>Matriz de Index : </b>", action$list_data[[2]][2], "seg<br>",
+          "<b>Geração de Clusters : </b>", action$list_data[[2]][3], "seg<br>",
+          "<b>Simulação de Monte Carlo: </b>", action$list_data[[2]][4], "seg<br>",
+          "<b>Clusters Sgnificativos: </b>", action$list_data[[2]][5], "seg<br>",
+          "<b>Total: </b>", action$list_data[[2]][6], "seg<br><br>")
     }
 
-    else if (input$window == 2)
-      if(input$k == 55000)
-        "K utilizado: 55km;"
-    if(input$k == 65000)
-      "K utilizado: 65km;"
-    if(input$k == 75000)
-      "K utilizado: 75km;"
   })
   
-  output$option5 <- renderText({
+  output$sig <- renderText({
     if (is.null(action$list_data)) return()
-    if (input$alpha == 0.01)
-      "Nível de significancia de 1%;"
-    else if (input$alpha == 0.05)
-      "Nível de significancia de 5%;"
-    else if (input$alpha == 0.1)
-      "Nível de significancia de 10%;"
+    paste("<b>Resultados</b><br>",
+      "<b>Número de clusters significativos : </b>", length(action$list_data[[1]]), "<br>")
   })
-  
-  output$option6 <- renderText({
-    if (is.null(action$list_data)) return()
-    if (input$simulacao == 99)
-      "99 simulações de Monte Carlo;"
-    else if (input$simulacao == 499)
-      "499 simulações de Monte Carlo;"
-    else if (input$simulacao == 999)
-      "999 simulações de Monte Carlo;"
-  })
-  
   
   output$mapa <- renderLeaflet({
       if (is.null(action$list_data)) return()
-      showSignificantClustersInfo(action$list_data,relacaoAlimentadorId,input$raio)
+      showSignificantClustersInfo(action$list_data[[1]],relacaoAlimentadorId)
   })
 
 }

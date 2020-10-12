@@ -102,15 +102,6 @@ createData <- function(joinData){
   return (list_data);
 }
 
-whatDataWillBeUsed <- function (diffCemigData,flag){
-  if (flag == 1)
-    return (4)
-  else if (flag == 2)
-    return (5)
-  else if (flag == 3)
-    return (6)
-}
-
 ########################### SECAO RCPP ###########################
 
 ########## Rcpp - LOGICA POR RAIO
@@ -437,7 +428,17 @@ optionExcluded <- function(data){
   return (response)
 }
 
+whatDataWillBeUsed <- function (diffCemigData,flag){
+  if (flag == 1)
+    return (4)
+  else if (flag == 2)
+    return (5)
+  else if (flag == 3)
+    return (6)
+}
+
 calculator_R <- function(radius,bound,diffCemigData,alpha,flag){
+  
   radius <- as.numeric(radius)
   bound <- as.numeric(bound)
   alpha <- as.numeric(alpha)
@@ -445,15 +446,29 @@ calculator_R <- function(radius,bound,diffCemigData,alpha,flag){
   N <- nrow(diffCemigData)
   
   col <- whatDataWillBeUsed(diffCemigData,flag)
-  
   data <-diffCemigData[,col]
-
+  timeVector <- rep(0, 5)
+  
+  ti <- Sys.time()
   distanceMatrix_R <- createEuclideanDistanceR(diffCemigData)
+  timeVector[1] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
   radiusClusters_R <- clusterGeneratorRadius(distanceMatrix_R,data,N,radius)
+  timeVector[2] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
   resultSimulRadius_R <- monteCarloSimulRadiusR(data,N, radiusClusters_R, radius,bound)
+  timeVector[3] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
   sigRadiusClusters_R <- significantRadiusClustersR(resultSimulRadius_R,radiusClusters_R,alpha)
- 
-  return(sigRadiusClusters_R)
+  timeVector[4] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  timeVector[5] <- round(as.numeric(timeVector[1]+ timeVector[2] + timeVector[3] + timeVector[4],units = "secs"),2)
+  list_data <- list(sigRadiusClusters_R,timeVector,resultSimulRadius_R)
+  
+  return(list_data)
 }
 
 calculator_Rcpp <- function(radius,bound,diffCemigData,alpha,flag){
@@ -465,12 +480,29 @@ calculator_Rcpp <- function(radius,bound,diffCemigData,alpha,flag){
   N <- nrow(diffCemigData)
   
   col <- whatDataWillBeUsed(diffCemigData,flag)
+  data <-diffCemigData[,col]
+  timeVector <- rep(0, 5)
   
+  ti <- Sys.time()
   distanceMatrix_Rcpp <- createEuclideanDistanceRcpp(as.matrix(diffCemigData),N)
-  radiusClusters_Rcpp <- clusterGeneratorRadiusRcpp(as.matrix(distanceMatrix_Rcpp),as.vector(diffCemigData[,col]),N,radius)
-  resultSimulRadius_Rcpp <- monteCarloSimulRadiusRcpp(as.matrix(distanceMatrix_Rcpp), as.vector(diffCemigData[,col]),N, radius, bound)
+  timeVector[1] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
+  radiusClusters_Rcpp <- clusterGeneratorRadiusRcpp(as.matrix(distanceMatrix_Rcpp),as.vector(data),N,radius)
+  timeVector[2] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
+  resultSimulRadius_Rcpp <- monteCarloSimulRadiusRcpp(as.matrix(distanceMatrix_Rcpp), as.vector(data),N, radius, bound)
+  timeVector[3] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
   sigRadiusClusters_Rcpp <- significantRadiusClustersRcpp(resultSimulRadius_Rcpp,radiusClusters_Rcpp,alpha)
-  return(sigRadiusClusters_Rcpp)
+  timeVector[4] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  timeVector[5] <- round(as.numeric(timeVector[1]+ timeVector[2] + timeVector[3] + timeVector[4],units = "secs"),2)
+  list_data <- list(sigRadiusClusters_Rcpp,timeVector)
+  
+  return(list_data)
 }
 
 calculator_K_R <- function(k,bound,diffCemigData,alpha,flag){
@@ -482,13 +514,32 @@ calculator_K_R <- function(k,bound,diffCemigData,alpha,flag){
   
   col <- whatDataWillBeUsed(diffCemigData,flag)
   data <-diffCemigData[,col]
+  timeVector <- rep(0, 6)
   
+  ti <- Sys.time()
   distanceMatrixK_R <- createEuclideanDistanceR(diffCemigData)
+  timeVector[1] <- round(as.numeric(Sys.time() - ti, units = "secs"), 2)
+  
+  ti <- Sys.time()
   IndexMatrix_R <-createIndexMatrixR(distanceMatrixK_R)
+  timeVector[2] <- round(as.numeric(Sys.time() - ti, units = "secs"), 2)
+  
+  ti <- Sys.time()
   KClusters_R <- clusterGeneratorK_R(IndexMatrix_R, data,N, k)
+  timeVector[3] <- round(as.numeric(Sys.time() - ti, units = "secs"), 2)
+  
+  ti <- Sys.time()
   resultSimulK_R <- monteCarloSimulK_R(IndexMatrix_R,data, N, KClusters_R, k, bound)
+  timeVector[4] <- round(as.numeric(Sys.time() - ti, units = "secs"), 2)
+  
+  ti <- Sys.time()
   sigKClusters_R <- significantKClustersR(resultSimulK_R, KClusters_R,k,alpha)
-  return(sigKClusters_R)
+  timeVector[5] <- round(as.numeric(Sys.time() - ti, units = "secs"), 2)
+  
+  timeVector[6] <- round(as.numeric(timeVector[1]+ timeVector[2] + timeVector[3] + timeVector[4] + timeVector[5],units = "secs"), 2)
+  list_data <- list(sigKClusters_R,timeVector)
+  
+  return(list_data)
 }
 
 calculator_K_Rcpp <- function(k,bound,diffCemigData,alpha,flag){
@@ -500,29 +551,51 @@ calculator_K_Rcpp <- function(k,bound,diffCemigData,alpha,flag){
   N <- nrow(diffCemigData)
   
   col <- whatDataWillBeUsed(diffCemigData,flag)
+  data <-diffCemigData[,col]
+  timeVector <- rep(0, 6)
   
+  ti <- Sys.time()
   distanceMatrixK_Rcpp <- createEuclideanDistanceRcpp(as.matrix(diffCemigData),N)
-  indexMatrix_Rcpp <- createIndexMatrixRcpp(as.matrix(distanceMatrixK_Rcpp), N) 
-  Kclusters_Rcpp <- clusterGeneratorK_Rcpp(as.matrix(indexMatrix_Rcpp), as.vector(diffCemigData[,col]), N, k)
-  resultSimulK_Rcpp<- monteCarloSimulK_Rcpp(as.matrix(indexMatrix_Rcpp), as.vector(diffCemigData[,col]), N, k, bound)
-  sigKClusters_Rcpp <- significantKClustersRcpp(resultSimulK_Rcpp,Kclusters_Rcpp,alpha)
+  timeVector[1] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
   
-  return(sigKClusters_Rcpp)
+  ti <- Sys.time()
+  indexMatrix_Rcpp <- createIndexMatrixRcpp(as.matrix(distanceMatrixK_Rcpp), N) 
+  timeVector[2] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
+  Kclusters_Rcpp <- clusterGeneratorK_Rcpp(as.matrix(indexMatrix_Rcpp), as.vector(data), N, k)
+  timeVector[3] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
+  resultSimulK_Rcpp<- monteCarloSimulK_Rcpp(as.matrix(indexMatrix_Rcpp), as.vector(data), N, k, bound)
+  timeVector[4] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  ti <- Sys.time()
+  sigKClusters_Rcpp <- significantKClustersRcpp(resultSimulK_Rcpp,Kclusters_Rcpp,alpha)
+  timeVector[5] <- round(as.numeric(Sys.time() - ti, units = "secs"),2)
+  
+  timeVector[6] <- round(as.numeric(timeVector[1]+ timeVector[2] + timeVector[3] + timeVector[4] + timeVector[5],units = "secs"),2)
+  list_data <- list(sigKClusters_Rcpp,timeVector)
+  
+  return(list_data)
 }
 
-showSignificantClustersInfo <- function(significantClusters_R,relacaoAlimentadorId,radius_R){
+showSignificantClustersInfo <- function(significantClusters_R,relacaoAlimentadorId){
   option = data.table(relacaoAlimentadorId[significantClusters_R,2:4])
+  label_opt <- {}
+  if(nrow(option) != 0)
+    label_opt <- option$alimentadora
   
   shp <- readOGR("Mapa\\.","MG_UF_2019", stringsAsFactors=FALSE, encoding="UTF-8")
   pal <- colorBin("Blues",domain = NULL,n=5) #cores do mapa
-  
+
   leaflet(data = shp) %>%
     addProviderTiles("CartoDB.Positron") %>%
     addPolygons(fillColor = ~pal(1), 
                 fillOpacity = 0.8, 
                 color = "#BDBDC3", 
                 weight = 1)%>%
-    addMarkers(lng = option$lon,lat= option$lat,label = option$alimentador,clusterOptions = markerClusterOptions())
+      addMarkers(lng = option$lon,lat= option$lat,label = label_opt,clusterOptions = markerClusterOptions())
 }
 
 boxsplotFunction<- function(diffCemigData,flag){
@@ -556,4 +629,5 @@ remove_outliers <- function(x, na.rm = TRUE, ...) {
   y[x > (qnt[2] + H)] <- NA
   y
 }
+
 
