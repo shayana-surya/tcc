@@ -59,7 +59,7 @@ ui <- fluidPage(
                           <p>Lorem ipsum erat aenean sapien eros mauris maecenas ut interdum bibendum cras dictumst nibh etiam id, habitasse lacinia tristique ligula potenti quisque volutpat ut litora bibendum mollis justo sagittis curae. leo nostra nam est tempus enim erat class, quisque iaculis vitae mattis ligula porttitor leo porta, habitasse mollis maecenas at sit volutpat. libero quis quam ligula ante hendrerit inceptos scelerisque tristique, arcu venenatis lectus malesuada vehicula adipiscing proin nibh, est faucibus netus quam pretium velit vestibulum. euismod sem eleifend sed volutpat condimentum placerat eros nec rutrum, platea vulputate semper etiam donec ipsum etiam nulla tempus, aenean auctor dapibus taciti sapien phasellus ultricies duis.</p>
                           <p>Quis cursus magna rutrum tincidunt tristique lorem fringilla curabitur, taciti cubilia sapien ornare sodales pharetra duis, suscipit integer potenti himenaeos felis et etiam. malesuada sociosqu sem commodo molestie platea phasellus tellus nibh metus dictumst tempor, magna euismod posuere lobortis himenaeos quisque aenean pulvinar ut quam, nisl sed tincidunt hac primis elit nam ultrices habitasse amet. inceptos curabitur euismod nostra aptent potenti dui id amet, praesent sed nam ut sagittis porta himenaeos aliquam primis, augue erat ornare adipiscing donec hac lacus. tincidunt metus adipiscing vivamus tempor commodo quisque a senectus, scelerisque ut nulla conubia facilisis erat cursus, odio metus class praesent id vehicula libero. </p>  
                           <p>Aliquam dui sollicitudin quam interdum orci lobortis posuere cubilia iaculis, auctor venenatis ut rhoncus varius in convallis odio, nisl dapibus aenean sociosqu quisque varius in turpis. est praesent integer habitasse euismod augue ut imperdiet sollicitudin, senectus eget aptent nullam vehicula curae curabitur potenti, ut nisl luctus ante aliquam fermentum lobortis. justo sapien at lobortis cursus rutrum ultricies non donec phasellus curabitur, risus feugiat sociosqu laoreet suscipit donec egestas leo diam aliquet, tempor a fames orci nibh fermentum posuere auctor ipsum. class tincidunt at et vivamus tempor non vehicula, dictumst potenti odio faucibus lectus eros. </p>  
-                        "),
+                        ")
                       )
                       
                       ),
@@ -129,10 +129,18 @@ ui <- fluidPage(
                      ),
                      tabPanel("Análise de Resultados",
                               sidebarLayout(
-                                
-                              ),
-                              mainPanel(
+                                sidebarPanel(
+                                  tags$h4("Entradas escolhidas"),
+                                  textOutput("option1"),
+                                  textOutput("option2"),
+                                  textOutput("option3"),
+                                  textOutput("option4"),
+                                  textOutput("option5"),
+                                  textOutput("option6"),
+                                ),
+                                mainPanel(
                                 leafletOutput("mapa",height = "90vh") %>% withSpinner(color="#0dc5c1")
+                              )
                               )
                         )
                      
@@ -165,9 +173,6 @@ server <- function(input,output,session) {
   
   ######### QUARTA ABA ##################
   
-
-    
-  ######### QUINTA ABA ##################
   action <- reactiveValues(data = NULL)
   
   observeEvent(input$submit, {
@@ -192,6 +197,76 @@ server <- function(input,output,session) {
     }
     remove_modal_spinner()
   })
+
+    
+  ######### QUINTA ABA ##################
+  
+  output$option1 <- renderText({
+    if (is.null(action$list_data)) return()
+    if (input$flag == 1)
+      "Dados de entrada: Consumo de 2013;"
+    else if (input$flag == 2)
+      "Dados de entrada: Consumo de 2018;"
+    else if (input$flag == 2)
+      "Dados de entrada: Diferença de consumo entre os anos;"
+  })
+  
+  output$option2 <- renderText({
+    if (is.null(action$list_data)) return()
+    if (input$codigo == 1)
+      "Linguagem utilizada: R;"
+    else if (input$codigo == 2)
+      "Linguagem utilizada: C++;"
+  })
+  
+  output$option3 <- renderText({
+    if (is.null(action$list_data)) return()
+    if (input$window == 1)
+      "Janela de varredura por Raio fixo;"
+    else if (input$window == 2)
+      "Janela de varredura por K elementos fixo;"
+  })
+  
+  output$option4 <- renderText({
+    if (is.null(action$list_data)) return()
+    if (input$window == 1){
+      if(input$raio == 150)
+        "Raio utilizado: 55km;"
+      if(input$raio == 250)
+        "Raio utilizado: 65km;"
+      if(input$raio == 500)
+        "Raio utilizado: 75km;"
+    }
+
+    else if (input$window == 2)
+      if(input$k == 55000)
+        "K utilizado: 55km;"
+    if(input$k == 65000)
+      "K utilizado: 65km;"
+    if(input$k == 75000)
+      "K utilizado: 75km;"
+  })
+  
+  output$option5 <- renderText({
+    if (is.null(action$list_data)) return()
+    if (input$alpha == 0.01)
+      "Nível de significancia de 1%;"
+    else if (input$alpha == 0.05)
+      "Nível de significancia de 5%;"
+    else if (input$alpha == 0.1)
+      "Nível de significancia de 10%;"
+  })
+  
+  output$option6 <- renderText({
+    if (is.null(action$list_data)) return()
+    if (input$simulacao == 99)
+      "99 simulações de Monte Carlo;"
+    else if (input$simulacao == 499)
+      "499 simulações de Monte Carlo;"
+    else if (input$simulacao == 999)
+      "999 simulações de Monte Carlo;"
+  })
+  
   
   output$mapa <- renderLeaflet({
       if (is.null(action$list_data)) return()
