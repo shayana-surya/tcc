@@ -9,8 +9,6 @@ library(data.table)
 library(REAT)
 library(Rcpp)
 library(rlist)
-#library(dplyr)
-#library(leaflet)
 
 source(file="functions.r")
 sourceCpp('functionsC++.cpp')
@@ -36,21 +34,6 @@ bound <-99
 alpha <- 0.05
 k <- 250
 type <- 1
-
-
-############## TESTE SHINY - APAGAR ####################
-#ti <- proc.time()
-
-#showMapInfo(2,list_data,relacaoAlimentadorId)
-
-sig <- calculator_K_R(k,bound,diffCemigData,alpha,1)
-#boxsplotFunction(diffCemigData,2)
-
-
-data <- calculator_R(radius,bound,diffCemigData,alpha,1)
-showSignificantClustersInfo(data[[1]],relacaoAlimentadorId)
-
-#proc.time() - ti
 
 
 ########################### SECAO RCPP ########################### 
