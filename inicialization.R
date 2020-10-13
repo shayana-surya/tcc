@@ -9,6 +9,7 @@ require(data.table)
 require(REAT)
 require(Rcpp)
 require(rlist)
+library(shiny)
 
 source(file="functions.r")
 sourceCpp('functionsC++.cpp')

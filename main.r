@@ -4,13 +4,13 @@
 ### date: "6 de novembro de 2019"
 ### ---
 
-require(readxl)
-require(data.table)
-require(REAT)
-require(Rcpp)
-require(rlist)
-require(dplyr)
-require(leaflet)
+library(readxl)
+library(data.table)
+library(REAT)
+library(Rcpp)
+library(rlist)
+#library(dplyr)
+#library(leaflet)
 
 source(file="functions.r")
 sourceCpp('functionsC++.cpp')
@@ -47,9 +47,9 @@ sig <- calculator_K_R(k,bound,diffCemigData,alpha,1)
 #boxsplotFunction(diffCemigData,2)
 
 
-#data <- calculator_R(radius,bound,diffCemigData,alpha,1)
-#showSignificantClustersInfo(data[[1]],relacaoAlimentadorId)
-#print(data[[2]][[2]])
+data <- calculator_R(radius,bound,diffCemigData,alpha,1)
+showSignificantClustersInfo(data[[1]],relacaoAlimentadorId)
+
 #proc.time() - ti
 
 

@@ -1,13 +1,9 @@
-require(rgdal)
-require(sp)
-require(RColorBrewer)
-require(leaflet)
-require(sf)
-require(ggplot2)
-require(shiny)
-require(DT)
-require(shinycssloaders)
-require(shinybusy)
+library(leaflet)
+library(ggplot2)
+library(rgdal)
+library(DT)
+library(shinycssloaders)
+library(shinybusy)
 
 source('inicialization.r')
 
@@ -29,9 +25,8 @@ ui <- fluidPage(
                       color: #00a651;
                       }
                       
-                    ")
-               
-    )
+                  ")
+          )
   ),
   navbarPage(title = tags$img(src="https://seeklogo.com/images/C/CEMIG-logo-42E5BC7D36-seeklogo.com.png", height = 30, width = 90),
              ######### PRIMEIRA ABA ######### 
@@ -72,14 +67,14 @@ ui <- fluidPage(
                             selectInput("EDA2","1. Análise exploratória", choice = c("dados 2013" = 1, "dados 2018" =2, "Alimentadoras em comum (diferença de consumo entre anos)"=3, "Alimentadoras desconsideradas"=4),selected = 1),
                             conditionalPanel(
                               condition = "input.EDA2 != 4",
-                              plotOutput("histPlot"),
+                              plotOutput("histPlot") %>% withSpinner(color="#0dc5c1"),
                               h4("Sumário"),
                               verbatimTextOutput("sum"),
-                              plotOutput("boxsplot")
+                              plotOutput("boxsplot") %>% withSpinner(color="#0dc5c1")
                             )
                             , height=1),
                         mainPanel(
-                           leafletOutput("plot2",height = "90vh")
+                           leafletOutput("plot2",height = "90vh") %>% withSpinner(color="#0dc5c1")
                         )
                       )
                   ),
@@ -88,7 +83,7 @@ ui <- fluidPage(
                       sidebarLayout(
                         sidebarPanel(
                           tags$h4("Selecione os dados de entrada:"),
-                          selectInput("flag","1. Dados a serem utilizado", choice = c("Consumo de 2013" = 1, "Consumo de 2018" =2, "Diferença entre os anos" = 3),selected = 3),
+                          selectInput("flag","1. Dados a serem utilizado:", choice = c("Consumo de 2013" = 1, "Consumo de 2018" =2, "Diferença entre os anos" = 3),selected = 3),
                           radioButtons("codigo", "2. Algoritmo a ser utilizado:",
                                        c("R" = 1,
                                          "C++" = 2),inline = TRUE),
@@ -97,26 +92,26 @@ ui <- fluidPage(
                                          "Por K elementos" = 2),inline = TRUE),
                           conditionalPanel(
                             condition = "input.window == 1",
-                            selectInput("raio","4. Tamanho do raio", choice = c("55 km" = 55000, "65 km" = 65000, "75 km" = 75000),selected = 55000),
+                            selectInput("raio","4. Tamanho do raio:", choice = c("30 km" = 30000, "60 km" = 60000, "80 km" = 80000,"100 km" = 100000,"150 km" = 150000),selected = 80000),
                           ),
                           conditionalPanel(
                             condition = "input.window == 2",
-                            selectInput("k","4. Número K de elementos", choice = c("150" = 150, "250" =250, "500" = 500),selected = 150),
+                            selectInput("k","4. Número K de elementos:", choice = c("100" = 100,"150" =150, "250" =250, "300" = 300),selected = 250),
                           ),
-                          selectInput("alpha","5. Nível de Significância", choice = c("1%" = 0.01, "5%" =0.05, "10%" = 0.1),selected = 0.05),
-                          selectInput("simulacao","6. Número de simulações", choice = c("99" = 99, "499" =499, "999" = 999),selected = 99),
+                          selectInput("alpha","5. Nível de Significância:", choice = c("1%" = 0.01, "5%" =0.05, "10%" = 0.1),selected = 0.05),
+                          selectInput("simulacao","6. Número de simulações:", choice = c("99" = 99, "499" =499, "999" = 999),selected = 99),
                           actionButton("submit", "Submit")
                         ),
                       mainPanel(
                         tags$h4("Informações gerais"),
                         HTML("
-                          <p> A partir dos dados selecionados é possível calcular, em tempo real, os clusters significativos e o tempo de execução das funções mais relevantes. Os resultado serão disponibilizado na Aba <b>'Análise de Resultados'</b></p>
+                          <p> A partir dos dados selecionados é possível calcular, em tempo real, os clusters significativos e o tempo de execução das funções mais relevantes. Os resultados serão disponibilizado na Aba <b>'Análise de Resultados'</b></p>
                           <p><b> 1. Dados a serem utilizado:</b> Aqui deve ser selecionado os dados de entrada que deseja analisar, estes podem ser os dados de consumo de 2013, consumo de 2018 ou a diferença de consumo entre os dois anos</p>
-                          <p><b> 2. Algoritmo a ser utilizado:</b> Para analisar o tempo de execução, disponibilizamos o código em duas linguagens diferentes: o R e o C++ (Rcpp). Por ser uma linguagem de mais baixo nível, é esperado que o tempo de execução seja menor no algoritmo em C++. Vale resaltar que não são todas as funções que foram isoladas em C++ e sim aquelas que consideramos as mais importantes: o cálculo de distância, a geração de clusters e a simulação de monte carlo. </p>
-                          <p><b> 3. Janela de varredura:</b> Duas diferentes abordagens foram disponibilizadas; a primeira utiliza um raio fixo e cada cluster contem números de alimentadores diferentes desde que a distancia entre eles seja menor ou igual ao raio. Já utilizando K, limitados o número de alimentadores dentro do cluster, isso signifca q surgirão clusters de raios diferentes porém com número de elementos iguais.</p>
-                          <p><b> 4. Tamanho do raio/Número K de elementos:</b> Caso opte por realizar o calculo por Raio, o tamanho do raio poderá ser selecionado no item 4; Porém se deseja utilizar K a opção disponibilizará a seleção do número de elementos K dentro do cluster.</p>
-                          <p><b> 5. Nível de Significância:</b> Os níveis de significância mais comuns forám disponibilizados, sendo eles 1%,5% e 10%. Este valor está associado com o nível de confiança de nosso teste; A um alfa de 10% temos um nível de 90% de confiança; para 5% , 95% de confiança e assim sucessivamente. </p>
-                          <p><b> 6. Número de simulações:</b> Por fim, disponibilizamos o número de simulações, este parâmetro impacta diretamente no tempo de execução do programa. Quanto maior o número de simulações, mais confiável será o resultado gerado porém,levará mais tempo para os resultados serem gerados.</p>
+                          <p><b> 2. Algoritmo a ser utilizado:</b> Para analisar o tempo de execução, disponibilizamos o código em duas linguagens diferentes: o R e o C++ (Rcpp). Por ser uma linguagem de mais baixo nível, é esperado que o tempo de execução seja menor no algoritmo em C++. Vale ressaltar que não são todas as funções que foram isoladas em C++ e sim aquelas que consideramos as mais importantes: o cálculo de distância, a geração de clusters e a simulação de Monte Carlo. </p>
+                          <p><b> 3. Janela de varredura:</b> Duas diferentes abordagens foram disponibilizadas; a primeira utiliza um raio fixo e cada cluster contem números de alimentadores diferentes desde que a distância entre eles seja menor ou igual ao raio. Já utilizando K, limitados o número de alimentadores dentro do cluster, isso significa que surgirão clusters de raios diferentes porém com número de elementos iguais.</p>
+                          <p><b> 4. Tamanho do raio/Número K de elementos:</b> Caso opte por realizar o cálculo por Raio, o tamanho do raio poderá ser selecionado no item 4; porém se deseja utilizar K a opção disponibilizará a seleção do número de elementos K dentro do cluster.</p>
+                          <p><b> 5. Nível de Significância:</b> Os níveis de significância mais comuns foram disponibilizados, sendo eles 1%,5% e 10%. Este valor está associado com o nível de confiança de nosso teste; A um alfa de 10% temos um nível de 90% de confiança; para 5%, 95% de confiança e assim sucessivamente. </p>
+                          <p><b> 6. Número de simulações:</b> Por fim, disponibilizamos o número de simulações, este parâmetro impacta diretamente no tempo de execução do programa. Quanto maior o número de simulações, mais confiável será o resultado gerado, porém,levará mais tempo para os resultados serem gerados.</p>
                           <p> Para executar o programa, após escolher os parâmetros desejados, submeta os dados e aguarde até a execução do programa ser finalizada.</p>
                              ")
                         )
@@ -202,6 +197,15 @@ server <- function(input,output,session) {
     else if (input$flag == 2)
       "Dados de entrada: Diferença de consumo entre os anos;"
   })
+
+  data <- function()({
+    if (input$flag == 1)
+      return("2013")
+    else if(input$flag == 2)
+      return("2018")
+    else
+      return("Diferença entre os anos")
+  })
   
 
   linguagem <- function()({
@@ -236,6 +240,7 @@ server <- function(input,output,session) {
   output$option <- renderText({
     if (is.null(action$list_data)) return()
     paste("<b>Entradas escolhidas<br></b>",
+          "<b>Dados analisados : </b>", data(), "<br>",
           "<b>Linguagem utilizada : </b>", linguagem(), "<br>",
           "<b>Janela de varredura : </b>", varredura(), "fixo<br>",
           "<b>", varredura(), "utilizado: </b>", janela() , unt(),
@@ -271,7 +276,7 @@ server <- function(input,output,session) {
   
   output$sig <- renderText({
     if (is.null(action$list_data)) return()
-    paste("<b>Resultados</b><br>",
+    paste("<b>Resultado</b><br>",
       "<b>Número de clusters significativos : </b>", length(action$list_data[[1]]), "<br>")
   })
   
