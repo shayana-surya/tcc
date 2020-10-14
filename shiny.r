@@ -43,7 +43,7 @@ ui <- fluidPage(
                                 <li> Número de simulações;</li>
                               </ul>  
                           </p>
-                          <p>Dessa forma, oferecemos  </p>
+                          <p>A técnica foi aplicada em dados do mercado de energia de uma concessionária do estado de Minas Gerais. Os dados representam o consumo de energia de alimentadores (também conhecidos como religadores), que são disjuntores de 13,8 kV instalados em subestações de energia elétrica. Para cada equipamento há o consumo de energia dos anos de 2013 e 2018, bem como sua latitude e longitude. </p>
 
                              ")
                       )
